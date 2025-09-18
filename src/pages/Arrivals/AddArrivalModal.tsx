@@ -156,6 +156,7 @@ export default function AddArrivalModal({
         } catch (error) {
             console.error("Kirim qo'shishda xatolik:", error);
             toast.error("Kirim qo'shishda xatolik");
+            onClose();
         } finally {
             setIsLoading(false);
         }

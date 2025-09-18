@@ -14,8 +14,10 @@ import {
     MdDelete,
     MdClose,
     MdLogout,
+    MdHistory,
 } from "react-icons/md";
 import Select from "../../components/form/Select";
+import { Link } from "react-router";
 
 interface Product {
     product_id: number;
@@ -465,6 +467,7 @@ const POSPage: React.FC = () => {
             const errorMessage =
                 error.response?.data?.error || "Sotishda xatolik";
             toast.error(errorMessage);
+            handleCloseCheckoutModal();
         } finally {
             setIsSubmitting(false);
         }
@@ -494,13 +497,22 @@ const POSPage: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900">
                             Do'kondagi mahsulotlar
                         </h1>
-                        <button
-                            onClick={handleLogout}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Chiqish"
-                        >
-                            <MdLogout className="text-2xl" />
-                        </button>
+                        <div className="flex gap-2">
+                            <Link
+                                to={"/sales-history"}
+                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Sotuv tarixi"
+                            >
+                                <MdHistory className="text-2xl" />
+                            </Link>
+                            <button
+                                onClick={handleLogout}
+                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Chiqish"
+                            >
+                                <MdLogout className="text-2xl" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Qidiruv */}

@@ -27,6 +27,8 @@ import ProductList from "./pages/Products/ProductList";
 import ArrivalList from "./pages/Arrivals/ArrivalList";
 import POSPage from "./pages/POS/POSPage";
 import CheckPage from "./pages/Check/CheckPage";
+import SalesHistoryPage from "./pages/SalesHistory/SalesHistoryPage";
+import SaleDetailsPage from "./pages/SalesHistory/SaleDetailsPage";
 
 // Role-based Protected Route Component
 const RoleBasedRoute = ({
@@ -150,6 +152,24 @@ export default function App() {
                             element={
                                 <RoleBasedRoute allowedRoles={[2]}>
                                     <CheckPage />
+                                </RoleBasedRoute>
+                            }
+                        />
+
+                        {/* Sotuv tarixi - Faqat role_id = 2 uchun */}
+                        <Route
+                            path="/sales-history"
+                            element={
+                                <RoleBasedRoute allowedRoles={[2]}>
+                                    <SalesHistoryPage />
+                                </RoleBasedRoute>
+                            }
+                        />
+                        <Route
+                            path="/sales-history/:saleId"
+                            element={
+                                <RoleBasedRoute allowedRoles={[2]}>
+                                    <SaleDetailsPage />
                                 </RoleBasedRoute>
                             }
                         />
