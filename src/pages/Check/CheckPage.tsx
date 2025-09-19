@@ -94,14 +94,45 @@ const CheckPage: React.FC = () => {
                         <span className="font-bold">Дата:</span>
                         <span className="font-bold">{saleData.timestamp}</span>
                     </div>
+
+                    {/* Qarz ma'lumotlari */}
+                    {saleData.isDebt && saleData.selectedClient && (
+                        <>
+                            <div className="flex justify-between">
+                                <span className="font-bold">Клиент:</span>
+                                <span className="font-bold">
+                                    {saleData.selectedClient.client_name}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="font-bold">Сумма долга:</span>
+                                <span className="font-bold text-red-600">
+                                    {formatNumber(
+                                        parseFloat(saleData.debtAmount)
+                                    )}{" "}
+                                    UZS
+                                </span>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Izoh */}
+                    {saleData.comments && (
+                        <div className="flex justify-between">
+                            <span className="font-bold">Комментарий:</span>
+                            <span className="font-bold text-gray-600">
+                                {saleData.comments}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Mahsulotlar ro'yxati */}
-                <div className="space-y-3 mb-2">
+                <div className=" mb-2">
                     {saleData.cart.map((item) => (
                         <div
                             key={item.product_id}
-                            className="flex justify-between items-center py-2"
+                            className="flex justify-between items-center py-1"
                         >
                             <div className="flex-1">
                                 <p className="text-sm font-bold w-4/5">
@@ -121,12 +152,38 @@ const CheckPage: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Jami summa */}
-                <div className="border-t border-gray-300 pt-4 mb-2">
+                {/* Jami summa va chegirma */}
+                <div className="border-t border-gray-300 pt-4 mb-2 space-y-2">
                     <div className="flex justify-between items-center text-lg font-bold text-gray-900">
                         <span>Итого:</span>
                         <span>{formatNumber(saleData.totalAmount)} UZS</span>
                     </div>
+
+                    {/* Chegirma ko'rsatish */}
+                    {saleData.discount && parseFloat(saleData.discount) > 0 && (
+                        <>
+                            <div className="flex justify-between items-center text-red-600">
+                                <span>Скидка:</span>
+                                <span className="font-bold">
+                                    -
+                                    {formatNumber(
+                                        parseFloat(saleData.discount)
+                                    )}{" "}
+                                    UZS
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center text-lg font-bold text-green-600 border-t pt-2">
+                                <span>К оплате:</span>
+                                <span className="text-xl">
+                                    {formatNumber(
+                                        saleData.totalAmount -
+                                            parseFloat(saleData.discount)
+                                    )}{" "}
+                                    UZS
+                                </span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Xabar */}

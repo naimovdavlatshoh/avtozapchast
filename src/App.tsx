@@ -29,6 +29,8 @@ import POSPage from "./pages/POS/POSPage";
 import CheckPage from "./pages/Check/CheckPage";
 import SalesHistoryPage from "./pages/SalesHistory/SalesHistoryPage";
 import SaleDetailsPage from "./pages/SalesHistory/SaleDetailsPage";
+import DebtorsPage from "./pages/Debtors/DebtorsPage";
+import DebtorDetailsPage from "./pages/Debtors/DebtorDetailsPage";
 
 // Role-based Protected Route Component
 const RoleBasedRoute = ({
@@ -116,6 +118,11 @@ export default function App() {
                             {/* Charts */}
                             <Route path="/line-chart" element={<LineChart />} />
                             <Route path="/bar-chart" element={<BarChart />} />
+                            <Route path="/debtors" element={<DebtorsPage />} />
+                            <Route
+                                path="/debtors/:debtorId"
+                                element={<DebtorDetailsPage />}
+                            />
                         </Route>
 
                         {/* Auth Layout - Public Routes */}
@@ -173,6 +180,8 @@ export default function App() {
                                 </RoleBasedRoute>
                             }
                         />
+
+                        {/* Qarzdorlar - Faqat role_id = 1 uchun */}
 
                         <Route path="*" element={<NotFound />} />
                     </Routes>

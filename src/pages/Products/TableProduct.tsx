@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import EditProductModal from "./EditProductModal";
+import BarcodeModal from "../../components/modals/BarcodeModal";
 import { GetDataSimpleBlob } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
+import { Modal } from "../../components/ui/modal";
+import { MdOutlineImageNotSupported } from "react-icons/md";
 
 interface Product {
     product_id: number;
@@ -31,21 +34,45 @@ const TableProduct: React.FC<TableProductProps> = ({
         null
     );
     const [imageUrls, setImageUrls] = useState<{ [key: number]: string }>({});
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [selectedImageUrl, setSelectedImageUrl] = useState<string>("");
+    const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
+    const [selectedBarcodeProduct, setSelectedBarcodeProduct] =
+        useState<Product | null>(null);
 
     const handleEdit = (product: Product) => {
         setSelectedProduct(product);
         setEditModalOpen(true);
     };
 
+    const handleImageClick = (imageUrl: string) => {
+        setSelectedImageUrl(imageUrl);
+        setImageModalOpen(true);
+    };
+
+    const handleCloseImageModal = () => {
+        setImageModalOpen(false);
+        setSelectedImageUrl("");
+    };
+
+    const handleBarcodeClick = (product: Product) => {
+        setSelectedBarcodeProduct(product);
+        setBarcodeModalOpen(true);
+    };
+
+    const handleCloseBarcodeModal = () => {
+        setBarcodeModalOpen(false);
+        setSelectedBarcodeProduct(null);
+    };
+
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString("uz-UZ", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
     };
 
     // Rasm URL larini yuklash
@@ -148,7 +175,18 @@ const TableProduct: React.FC<TableProductProps> = ({
                                                     ) || ""
                                                 }
                                                 alt={product.product_name || ""}
-                                                className="w-10 h-10 rounded object-cover"
+                                                className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                                onClick={() => {
+                                                    const imageUrl =
+                                                        getImageUrl(
+                                                            product.image_id
+                                                        );
+                                                    if (imageUrl) {
+                                                        handleImageClick(
+                                                            imageUrl
+                                                        );
+                                                    }
+                                                }}
                                                 onError={(e) => {
                                                     e.currentTarget.style.display =
                                                         "none";
@@ -157,7 +195,9 @@ const TableProduct: React.FC<TableProductProps> = ({
                                         ) : (
                                             <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
                                                 <span className="text-gray-400 text-xs">
-                                                    Rasm yo'q
+                                                    <MdOutlineImageNotSupported
+                                                        size={25}
+                                                    />
                                                 </span>
                                             </div>
                                         )}
@@ -209,6 +249,31 @@ const TableProduct: React.FC<TableProductProps> = ({
                                                     />
                                                 </svg>
                                             </button>
+                                            {product.barcode && (
+                                                <button
+                                                    onClick={() =>
+                                                        handleBarcodeClick(
+                                                            product
+                                                        )
+                                                    }
+                                                    className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                                                    title="Shtrix-kod ko'rish"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -224,6 +289,52 @@ const TableProduct: React.FC<TableProductProps> = ({
                     onClose={() => setEditModalOpen(false)}
                     product={selectedProduct}
                     changeStatus={changeStatus}
+                />
+            )}
+
+            {/* Rasm modal */}
+            <Modal isOpen={imageModalOpen} onClose={handleCloseImageModal}>
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-10">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Mahsulot rasmi
+                        </h3>
+                        <button
+                            onClick={handleCloseImageModal}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                    <div className="flex justify-center">
+                        <img
+                            src={selectedImageUrl}
+                            alt="Mahsulot rasmi"
+                            className="max-w-full max-h-96 rounded-lg shadow-lg object-contain"
+                        />
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Barcode modal */}
+            {barcodeModalOpen && selectedBarcodeProduct && (
+                <BarcodeModal
+                    isOpen={barcodeModalOpen}
+                    onClose={handleCloseBarcodeModal}
+                    barcodeValue={selectedBarcodeProduct.barcode.toString()}
+                    productName={selectedBarcodeProduct.product_name}
                 />
             )}
         </div>

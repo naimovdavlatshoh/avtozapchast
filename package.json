@@ -26,6 +26,7 @@
     "docxtemplater-image-module-free": "^1.1.1",
     "file-saver": "^2.0.5",
     "flatpickr": "^4.6.13",
+    "jsbarcode": "^3.12.1",
     "pizzip": "^3.2.0",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",

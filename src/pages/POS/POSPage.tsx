@@ -12,12 +12,13 @@ import {
     MdAdd,
     MdRemove,
     MdDelete,
-    MdClose,
     MdLogout,
     MdHistory,
 } from "react-icons/md";
 import Select from "../../components/form/Select";
 import { Link } from "react-router";
+import { Modal } from "../../components/ui/modal";
+
 
 interface Product {
     product_id: number;
@@ -49,6 +50,7 @@ interface Client {
     client_name: string;
     phone?: string;
     address?: string;
+    debt?: number;
 }
 
 const POSPage: React.FC = () => {
@@ -488,6 +490,13 @@ const POSPage: React.FC = () => {
         resetCheckoutForm();
     };
 
+    // Chegirma bilan umumiy summani hisoblash
+    const getTotalWithDiscount = () => {
+        const total = getTotalAmount();
+        const discountAmount = parseFloat(discount) || 0;
+        return Math.max(0, total - discountAmount);
+    };
+
     return (
         <div className="h-screen w-screen bg-gray-50 flex fixed inset-0 z-50">
             {/* Mahsulotlar qismi - 75% */}
@@ -920,182 +929,185 @@ const POSPage: React.FC = () => {
             </div>
 
             {/* Checkout Modal */}
-            {isCheckoutModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                            <h2 className="text-xl font-bold text-gray-900">
-                                Sotishni yakunlash
-                            </h2>
-                            <button
-                                onClick={handleCloseCheckoutModal}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <MdClose className="text-2xl" />
-                            </button>
-                        </div>
-
-                        {/* Modal Body */}
-                        <div className="p-6 space-y-6">
-                            {/* Karzina ma'lumotlari */}
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <h3 className="font-semibold text-gray-900 mb-3">
-                                    Karzina ma'lumotlari
-                                </h3>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>Mahsulotlar soni:</span>
+            <Modal
+                isOpen={isCheckoutModalOpen}
+                onClose={handleCloseCheckoutModal}
+            >
+                <div className="p-6 space-y-6">
+                    {/* Karzina ma'lumotlari */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-3">
+                            Karzina ma'lumotlari
+                        </h3>
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <span>Mahsulotlar soni:</span>
+                                <span className="font-semibold">
+                                    {getTotalItems()} dona
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Jami summa:</span>
+                                <span className="font-semibold text-blue-600">
+                                    {formatNumber(getTotalAmount())} so'm
+                                </span>
+                            </div>
+                            {discount && parseFloat(discount) > 0 && (
+                                <>
+                                    <div className="flex justify-between text-red-600">
+                                        <span>Chegirma:</span>
                                         <span className="font-semibold">
-                                            {getTotalItems()} dona
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Jami summa:</span>
-                                        <span className="font-semibold text-blue-600">
-                                            {formatNumber(getTotalAmount())}{" "}
+                                            -
+                                            {formatNumber(parseFloat(discount))}{" "}
                                             so'm
                                         </span>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Qarz checkbox */}
-                            <div className="flex items-center space-x-3">
-                                <input
-                                    type="checkbox"
-                                    id="isDebt"
-                                    checked={isDebt}
-                                    onChange={(e) =>
-                                        handleDebtChange(e.target.checked)
-                                    }
-                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <label
-                                    htmlFor="isDebt"
-                                    className="text-sm font-medium text-gray-900"
-                                >
-                                    Qarzga sotish
-                                </label>
-                            </div>
-
-                            {/* Qarz bo'lsa mijoz tanlash */}
-                            {isDebt && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Mijozni tanlang *
-                                        </label>
-                                        <Select
-                                            defaultValue={
-                                                selectedClient?.client_id?.toString() ||
-                                                ""
-                                            }
-                                            onChange={(value: string) => {
-                                                const clientId =
-                                                    parseInt(value);
-                                                const client = clients.find(
-                                                    (c) =>
-                                                        c.client_id === clientId
-                                                );
-                                                setSelectedClient(
-                                                    client || null
-                                                );
-                                            }}
-                                            options={clients.map((client) => ({
-                                                value: client.client_id,
-                                                label: `${client.client_name} ${
-                                                    client.phone
-                                                        ? `(${client.phone})`
-                                                        : ""
-                                                }`,
-                                            }))}
-                                            placeholder="Mijozni tanlang"
-                                            searchable={true}
-                                            onSearch={searchClients}
-                                        />
+                                    <div className="flex justify-between text-green-600 border-t pt-2">
+                                        <span className="font-bold">
+                                            To'lanadigan summa:
+                                        </span>
+                                        <span className="font-bold text-lg">
+                                            {formatNumber(
+                                                getTotalWithDiscount()
+                                            )}{" "}
+                                            so'm
+                                        </span>
                                     </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Qarz summasi *
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={debtAmount}
-                                            onChange={(e) =>
-                                                setDebtAmount(e.target.value)
-                                            }
-                                            placeholder="Qarz summasini kiriting"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                </div>
+                                </>
                             )}
+                        </div>
+                    </div>
 
-                            {/* Izoh */}
+                    {/* Qarz checkbox */}
+                    <div className="flex items-center space-x-3">
+                        <input
+                            type="checkbox"
+                            id="isDebt"
+                            checked={isDebt}
+                            onChange={(e) => handleDebtChange(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <label
+                            htmlFor="isDebt"
+                            className="text-sm font-medium text-gray-900"
+                        >
+                            Qarzga sotish
+                        </label>
+                    </div>
+
+                    {/* Qarz bo'lsa mijoz tanlash */}
+                    {isDebt && (
+                        <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Izoh (ixtiyoriy)
+                                    Mijozni tanlang *
                                 </label>
-                                <textarea
-                                    value={comments}
-                                    onChange={(e) =>
-                                        setComments(e.target.value)
+                                <Select
+                                    defaultValue={
+                                        selectedClient?.client_id?.toString() ||
+                                        ""
                                     }
-                                    placeholder="Sotish haqida izoh..."
-                                    rows={3}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onChange={(value: string) => {
+                                        const clientId = parseInt(value);
+                                        const client = clients.find(
+                                            (c) => c.client_id === clientId
+                                        );
+                                        setSelectedClient(client || null);
+                                    }}
+                                    options={clients.map((client) => ({
+                                        value: client.client_id,
+                                        label: `${client.client_name} ${
+                                            client.phone
+                                                ? `(${client.phone})`
+                                                : ""
+                                        } ${
+                                            client.debt && client.debt > 0
+                                                ? `- Mavjud qarz: ${formatNumber(
+                                                      client.debt
+                                                  )} so'm`
+                                                : ""
+                                        }`,
+                                    }))}
+                                    placeholder="Mijozni tanlang"
+                                    searchable={true}
+                                    onSearch={searchClients}
                                 />
                             </div>
 
-                            {/* Chegirma */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Chegirma (so'm) (ixtiyoriy)
+                                    Qarz summasi *
                                 </label>
                                 <input
                                     type="number"
-                                    value={discount}
+                                    value={debtAmount}
                                     onChange={(e) =>
-                                        setDiscount(e.target.value)
+                                        setDebtAmount(e.target.value)
                                     }
-                                    placeholder="Chegirma summasini kiriting"
+                                    placeholder="Qarz summasini kiriting"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                         </div>
+                    )}
 
-                        {/* Modal Footer */}
-                        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-                            <button
-                                onClick={handleCloseCheckoutModal}
-                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                            >
-                                Bekor qilish
-                            </button>
-                            <button
-                                onClick={handleSubmitSale}
-                                disabled={isSubmitting}
-                                className={`px-6 py-2 text-white rounded-md transition-colors ${
-                                    isSubmitting
-                                        ? "bg-blue-400 cursor-not-allowed"
-                                        : "bg-blue-600 hover:bg-blue-700"
-                                }`}
-                            >
-                                {isSubmitting ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Yakunlanmoqda...
-                                    </div>
-                                ) : (
-                                    "Sotishni yakunlash"
-                                )}
-                            </button>
-                        </div>
+                    {/* Izoh */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Izoh (ixtiyoriy)
+                        </label>
+                        <textarea
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                            placeholder="Sotish haqida izoh..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    {/* Chegirma */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Chegirma (so'm) (ixtiyoriy)
+                        </label>
+                        <input
+                            type="number"
+                            value={discount}
+                            onChange={(e) => setDiscount(e.target.value)}
+                            placeholder="Chegirma summasini kiriting"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    {/* Modal Footer */}
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button
+                            onClick={handleCloseCheckoutModal}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                            Bekor qilish
+                        </button>
+                        <button
+                            onClick={handleSubmitSale}
+                            disabled={isSubmitting}
+                            className={`px-6 py-2 text-white rounded-md transition-colors ${
+                                isSubmitting
+                                    ? "bg-blue-400 cursor-not-allowed"
+                                    : "bg-blue-600 hover:bg-blue-700"
+                            }`}
+                        >
+                            {isSubmitting ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Yakunlanmoqda...
+                                </div>
+                            ) : (
+                                "Sotishni yakunlash"
+                            )}
+                        </button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     );
 };

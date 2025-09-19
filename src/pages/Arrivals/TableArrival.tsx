@@ -4,7 +4,6 @@ import { Modal } from "../../components/ui/modal";
 import { formatNumber } from "../../utils/numberFormat";
 import { IoEyeSharp } from "react-icons/io5";
 
-
 interface ArrivalItem {
     arrival_item_id: number;
     arrival_id: number;
@@ -38,13 +37,12 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString("uz-UZ", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
     };
 
     const getTotalAmount = (items: ArrivalItem[]) => {
