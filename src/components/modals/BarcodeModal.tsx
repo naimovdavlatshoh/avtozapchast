@@ -24,7 +24,7 @@ const BarcodeModal: React.FC<BarcodeModalProps> = ({
                 {/* Header */}
 
                 {/* Barcode */}
-                <div className="bg-white p-6 rounded-lg border-2 border-gray-200 dark:border-gray-600 mb-6">
+                <div className="bg-white p-6 rounded-lg  mb-2">
                     <div className="flex justify-center">
                         <BarcodeGenerator
                             value={barcodeValue}
