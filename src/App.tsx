@@ -85,7 +85,7 @@ export default function App() {
                                 </RoleBasedRoute>
                             }
                         >
-                            <Route index path="/" element={<Home />} />
+                            <Route index path="/" element={<ClientList />} />
 
                             {/* Others Page */}
                             <Route path="/profile" element={<UserProfiles />} />
@@ -103,7 +103,7 @@ export default function App() {
                                 path="/basic-tables"
                                 element={<BasicTables />}
                             />
-                            <Route path="/clients" element={<ClientList />} />
+
                             <Route path="/products" element={<ProductList />} />
                             <Route path="/arrivals" element={<ArrivalList />} />
 

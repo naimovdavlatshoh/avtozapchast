@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import { GetDataSimple, PostSimple } from "../../service/data";
@@ -22,9 +22,69 @@ export default function ProductList() {
     const [status, setStatus] = useState(false);
     const [tableLoading, setTableLoading] = useState(false);
 
+    // Barcode scanner uchun
+    const [barcodeInput, setBarcodeInput] = useState("");
+    const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         fetchProducts();
     }, [page, status]);
+
+    // Barcode scanner event listener
+    useEffect(() => {
+        const handleKeyPress = (event: KeyboardEvent) => {
+            // Agar input yoki textarea focus bo'lsa, barcode scanner ishlamasin
+            const activeElement = document.activeElement as HTMLElement;
+            if (
+                activeElement &&
+                (activeElement.tagName === "INPUT" ||
+                    activeElement.tagName === "TEXTAREA" ||
+                    activeElement.contentEditable === "true")
+            ) {
+                return;
+            }
+
+            // Enter tugmasini tekshirish
+            if (event.key === "Enter") {
+                if (barcodeInput.trim().length > 0) {
+                    // Barcode to'liq bo'lsa, search qilish
+                    setSearchKeyword(barcodeInput.trim());
+                    handleSearchWithKeyword(barcodeInput.trim());
+                    setBarcodeInput("");
+
+                    // Search inputga focus qilish
+                    if (searchInputRef.current) {
+                        searchInputRef.current.focus();
+                    }
+                }
+            } else if (event.key.length === 1) {
+                // Faqat harflar va raqamlar qo'shiladi (barcode scanner uchun)
+                setBarcodeInput((prev) => prev + event.key);
+
+                // Timeout ni tozalash
+                if (barcodeTimeoutRef.current) {
+                    clearTimeout(barcodeTimeoutRef.current);
+                }
+
+                // 200ms dan keyin barcode inputni tozalash (scanner tez yozsa)
+                barcodeTimeoutRef.current = setTimeout(() => {
+                    setBarcodeInput("");
+                }, 200);
+            }
+        };
+
+        // Global keydown event listener qo'shish
+        document.addEventListener("keydown", handleKeyPress);
+
+        // Cleanup function
+        return () => {
+            document.removeEventListener("keydown", handleKeyPress);
+            if (barcodeTimeoutRef.current) {
+                clearTimeout(barcodeTimeoutRef.current);
+            }
+        };
+    }, [barcodeInput]);
 
     const fetchProducts = async () => {
         setTableLoading(true);
@@ -84,13 +144,21 @@ export default function ProductList() {
                     desc={
                         <div className="flex gap-4 items-center">
                             <div className="flex gap-2">
-                                <Input
-                                    type="text"
-                                    placeholder="Mahsulot qidirish... (3+ harf)"
-                                    value={searchKeyword}
-                                    onChange={handleSearchChange}
-                                    className="w-64"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        placeholder="Mahsulot qidirish... (3+ harf) yoki barcode scanner"
+                                        value={searchKeyword}
+                                        onChange={handleSearchChange}
+                                        className="w-64"
+                                    />
+                                    {barcodeInput && (
+                                        <div className="absolute -top-8 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                                            Scanner: {barcodeInput}
+                                        </div>
+                                    )}
+                                </div>
                                 {isSearching && (
                                     <button
                                         type="button"

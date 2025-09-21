@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
     {
         name: "Mijozlar",
         icon: <UserIcon />,
-        path: "/clients",
+        path: "/",
         roles: [1, 2], // Admin va Director
     },
     {
