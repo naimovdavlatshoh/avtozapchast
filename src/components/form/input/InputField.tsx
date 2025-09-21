@@ -1,5 +1,5 @@
 import type React from "react";
-import type { FC } from "react";
+
 import { forwardRef } from "react";
 
 interface InputProps {
