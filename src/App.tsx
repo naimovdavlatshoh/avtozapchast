@@ -17,7 +17,6 @@ import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
 // import UserList from "./pages/Users/UserList";
 import { Toaster } from "react-hot-toast";
 import { SearchProvider } from "./context/SearchContext";
