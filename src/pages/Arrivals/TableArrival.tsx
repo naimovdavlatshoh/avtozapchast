@@ -45,9 +45,9 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
         return `${year}-${month}-${day} ${hours}:${minutes}`;
     };
 
-    const getTotalAmount = (items: ArrivalItem[]) => {
-        return items.reduce((total, item) => total + item.amount, 0);
-    };
+    // const getTotalAmount = (items: ArrivalItem[]) => {
+    //     return items.reduce((total, item) => total + item.amount, 0);
+    // };
 
     const handleViewItems = (arrival: Arrival) => {
         setSelectedArrival(arrival);
@@ -72,12 +72,12 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                 <th scope="col" className="px-6 py-3">
                                     Kirim raqami
                                 </th>
-                                <th scope="col" className="px-6 py-3">
+                                {/* <th scope="col" className="px-6 py-3">
                                     Mahsulotlar soni
                                 </th>
                                 <th scope="col" className="px-6 py-3">
                                     Jami miqdor
-                                </th>
+                                </th> */}
                                 <th scope="col" className="px-6 py-3">
                                     Jami qiymat
                                 </th>
@@ -104,12 +104,12 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                     <td className="px-6 py-4">
                                         {arrival.arrival_number || "N/A"}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    {/* <td className="px-6 py-4">
                                         {arrival.items.length}
                                     </td>
                                     <td className="px-6 py-4">
                                         {getTotalAmount(arrival.items)}
-                                    </td>
+                                    </td> */}
                                     <td className="px-6 py-4">
                                         {formatNumber(arrival.total_price)} so'm
                                     </td>

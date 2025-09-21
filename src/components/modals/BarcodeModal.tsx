@@ -38,13 +38,14 @@ const BarcodeModal: React.FC<BarcodeModalProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-center gap-3">
+                <div className="flex justify-center gap-3 print:hidden">
                     <button
                         onClick={handlePrint}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium shadow-md hover:shadow-lg"
+                        className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium shadow-md hover:shadow-lg"
+                        title="Chop etish"
                     >
                         <svg
-                            className="w-5 h-5"
+                            className="w-6 h-6"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -56,7 +57,6 @@ const BarcodeModal: React.FC<BarcodeModalProps> = ({
                                 d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                             />
                         </svg>
-                        Chop etish
                     </button>
                 </div>
             </div>

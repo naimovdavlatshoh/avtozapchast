@@ -19,7 +19,6 @@ import Select from "../../components/form/Select";
 import { Link } from "react-router";
 import { Modal } from "../../components/ui/modal";
 
-
 interface Product {
     product_id: number;
     product_name: string;
@@ -74,7 +73,6 @@ const POSPage: React.FC = () => {
     const [isDebt, setIsDebt] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [clients, setClients] = useState<Client[]>([]);
-    const [debtAmount, setDebtAmount] = useState("");
     const [comments, setComments] = useState("");
     const [discount, setDiscount] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -390,7 +388,7 @@ const POSPage: React.FC = () => {
             loadClients();
         } else {
             setSelectedClient(null);
-            setDebtAmount("");
+
         }
     };
 
@@ -398,11 +396,6 @@ const POSPage: React.FC = () => {
     const handleSubmitSale = async () => {
         if (isDebt && !selectedClient) {
             toast.error("Qarzga sotish uchun mijozni tanlang");
-            return;
-        }
-
-        if (isDebt && !debtAmount.trim()) {
-            toast.error("Qarz summasini kiriting");
             return;
         }
 
@@ -442,7 +435,6 @@ const POSPage: React.FC = () => {
                     cart: [...cart],
                     isDebt,
                     selectedClient,
-                    debtAmount,
                     comments,
                     discount,
                     totalAmount: getTotalAmount(),
@@ -479,7 +471,7 @@ const POSPage: React.FC = () => {
     const resetCheckoutForm = () => {
         setIsDebt(false);
         setSelectedClient(null);
-        setDebtAmount("");
+
         setComments("");
         setDiscount("");
     };
@@ -1031,21 +1023,6 @@ const POSPage: React.FC = () => {
                                     placeholder="Mijozni tanlang"
                                     searchable={true}
                                     onSearch={searchClients}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Qarz summasi *
-                                </label>
-                                <input
-                                    type="number"
-                                    value={debtAmount}
-                                    onChange={(e) =>
-                                        setDebtAmount(e.target.value)
-                                    }
-                                    placeholder="Qarz summasini kiriting"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                         </div>

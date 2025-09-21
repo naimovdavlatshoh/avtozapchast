@@ -18,6 +18,12 @@ interface Debtor {
     debt: string;
 }
 
+interface TotalDebts {
+    total_debt: number;
+    total_payments: number;
+    debt_minus_payments: number;
+}
+
 const DebtorsPage: React.FC = () => {
     const [debtorsData, setDebtorsData] = useState<Debtor[] | null>(null);
     const [loading, setLoading] = useState(true);
@@ -30,6 +36,7 @@ const DebtorsPage: React.FC = () => {
     const [paymentAmount, setPaymentAmount] = useState("");
     const [paymentComments, setPaymentComments] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [totalDebts, setTotalDebts] = useState<TotalDebts | null>(null);
 
     // Delete modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -52,9 +59,24 @@ const DebtorsPage: React.FC = () => {
             setLoading(false);
         }
     };
+    const fetchTotalDebts = async () => {
+        try {
+            setLoading(true);
+            const response = await GetDataSimple(`api/debtors/details`);
+            if (response) {
+                setTotalDebts(response);
+            }
+        } catch (error) {
+            console.error("Qarzdorlarni yuklashda xatolik:", error);
+            toast.error("Nimadir xatolik yuz berdi");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetchDebtors(page);
+        fetchTotalDebts();
     }, [page]);
 
     // Payment functions
@@ -198,10 +220,11 @@ const DebtorsPage: React.FC = () => {
                                             <p className="text-lg font-bold text-blue-600">
                                                 {formatNumber(
                                                     debtorsData?.reduce(
-                                                        (sum, debtor) =>
+                                                        (sum) =>
                                                             sum +
                                                             parseFloat(
-                                                                debtor.total_sales
+                                                                totalDebts?.total_debt?.toString() ||
+                                                                    "0"
                                                             ),
                                                         0
                                                     ) || 0
@@ -235,10 +258,11 @@ const DebtorsPage: React.FC = () => {
                                             <p className="text-lg font-bold text-green-600">
                                                 {formatNumber(
                                                     debtorsData?.reduce(
-                                                        (sum, debtor) =>
+                                                        (sum) =>
                                                             sum +
                                                             parseFloat(
-                                                                debtor.total_payments
+                                                                totalDebts?.total_payments?.toString() ||
+                                                                    "0"
                                                             ),
                                                         0
                                                     ) || 0
@@ -252,7 +276,7 @@ const DebtorsPage: React.FC = () => {
                                     <div className="flex items-center">
                                         <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
                                             <svg
-                                                className="w-4 h-4 text-red-600"
+                                                className="w-6 h-6 text-red-600"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -272,10 +296,11 @@ const DebtorsPage: React.FC = () => {
                                             <p className="text-lg font-bold text-red-600">
                                                 {formatNumber(
                                                     debtorsData?.reduce(
-                                                        (sum, debtor) =>
+                                                        (sum) =>
                                                             sum +
                                                             parseFloat(
-                                                                debtor.debt
+                                                                totalDebts?.debt_minus_payments?.toString() ||
+                                                                    "0"
                                                             ),
                                                         0
                                                     ) || 0
@@ -294,7 +319,7 @@ const DebtorsPage: React.FC = () => {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                       #
+                                        #
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Mijoz
