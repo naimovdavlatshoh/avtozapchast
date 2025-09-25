@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import EditProductModal from "./EditProductModal";
 import BarcodeModal from "../../components/modals/BarcodeModal";
-import { GetDataSimpleBlob } from "../../service/data";
+import { GetDataSimpleBlob, UpdateProductPrice } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
 import { Modal } from "../../components/ui/modal";
 import { MdOutlineImageNotSupported } from "react-icons/md";
+import { toast } from "react-hot-toast";
 
 interface Product {
     product_id: number;
@@ -39,6 +40,11 @@ const TableProduct: React.FC<TableProductProps> = ({
     const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
     const [selectedBarcodeProduct, setSelectedBarcodeProduct] =
         useState<Product | null>(null);
+    const [editingProductId, setEditingProductId] = useState<number | null>(
+        null
+    );
+    const [priceInputValue, setPriceInputValue] = useState<string>("");
+    const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
     const handleEdit = (product: Product) => {
         setSelectedProduct(product);
@@ -63,6 +69,40 @@ const TableProduct: React.FC<TableProductProps> = ({
     const handleCloseBarcodeModal = () => {
         setBarcodeModalOpen(false);
         setSelectedBarcodeProduct(null);
+    };
+
+    const handleEditPrice = (product: Product) => {
+        setEditingProductId(product.product_id);
+        setPriceInputValue(product.selling_price.toString());
+    };
+
+    const handleCancelEditPrice = () => {
+        setEditingProductId(null);
+        setPriceInputValue("");
+    };
+
+    const handleSavePrice = async () => {
+        if (!editingProductId || !priceInputValue) return;
+
+        const newPrice = parseFloat(priceInputValue);
+        if (isNaN(newPrice) || newPrice < 0) {
+            toast.error("Iltimos, to'g'ri narx kiriting");
+            return;
+        }
+
+        setIsUpdatingPrice(true);
+        try {
+            await UpdateProductPrice(editingProductId, newPrice);
+            // Update the product in the local state
+            changeStatus(); // This will refresh the products list
+            handleCancelEditPrice();
+            toast.success("Mahsulot narxi muvaffaqiyatli o'zgartirildi!");
+        } catch (error) {
+            console.error("Narxni yangilashda xatolik:", error);
+            toast.error("Narxni yangilashda xatolik yuz berdi");
+        } finally {
+            setIsUpdatingPrice(false);
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -212,8 +252,120 @@ const TableProduct: React.FC<TableProductProps> = ({
                                         {product.total_amount}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {formatNumber(product.selling_price)}{" "}
-                                        so'm
+                                        {editingProductId ===
+                                        product.product_id ? (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={priceInputValue}
+                                                    onChange={(e) =>
+                                                        setPriceInputValue(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Narx"
+                                                    min="0"
+                                                    step="0.01"
+                                                />
+                                                <span className="text-sm text-gray-500">
+                                                    so'm
+                                                </span>
+                                                <button
+                                                    onClick={handleSavePrice}
+                                                    disabled={isUpdatingPrice}
+                                                    className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                                                    title="Saqlash"
+                                                >
+                                                    {isUpdatingPrice ? (
+                                                        <svg
+                                                            className="w-4 h-4 animate-spin"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <circle
+                                                                className="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                strokeWidth="4"
+                                                            ></circle>
+                                                            <path
+                                                                className="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                            ></path>
+                                                        </svg>
+                                                    ) : (
+                                                        <svg
+                                                            className="w-4 h-4"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M5 13l4 4L19 7"
+                                                            />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={
+                                                        handleCancelEditPrice
+                                                    }
+                                                    className="text-red-600 hover:text-red-800"
+                                                    title="Bekor qilish"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M6 18L18 6M6 6l12 12"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <span>
+                                                    {formatNumber(
+                                                        product.selling_price
+                                                    )}{" "}
+                                                    so'm
+                                                </span>
+                                                <button
+                                                    onClick={() =>
+                                                        handleEditPrice(product)
+                                                    }
+                                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                                    title="Narxni tahrirlash"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 max-w-xs">
                                         <div

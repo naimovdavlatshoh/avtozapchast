@@ -33,6 +33,12 @@ const Select: React.FC<SelectProps> = ({
     const [filteredOptions, setFilteredOptions] = useState<Option[]>(
         options || []
     );
+    const [dropdownPosition, setDropdownPosition] = useState({
+        top: 0,
+        left: 0,
+        width: 0,
+        maxHeight: 320,
+    });
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Update filtered options when options change
@@ -52,7 +58,7 @@ const Select: React.FC<SelectProps> = ({
         }
     }, [options, searchTerm]);
 
-    // Close dropdown when clicking outside
+    // Close dropdown when clicking outside and update position on scroll
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
@@ -64,10 +70,28 @@ const Select: React.FC<SelectProps> = ({
             }
         };
 
+        const handleScroll = () => {
+            if (isOpen) {
+                updateDropdownPosition();
+            }
+        };
+
+        const handleResize = () => {
+            if (isOpen) {
+                updateDropdownPosition();
+            }
+        };
+
         document.addEventListener("mousedown", handleClickOutside);
-        return () =>
+        window.addEventListener("scroll", handleScroll, true);
+        window.addEventListener("resize", handleResize);
+
+        return () => {
             document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+            window.removeEventListener("scroll", handleScroll, true);
+            window.removeEventListener("resize", handleResize);
+        };
+    }, [isOpen]);
 
     const handleChange = (value: string) => {
         setSelectedValue(value);
@@ -91,7 +115,41 @@ const Select: React.FC<SelectProps> = ({
         }
     };
 
+    const updateDropdownPosition = () => {
+        if (dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const dropdownHeight = 320; // max-h-80 = 320px
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            let top = rect.bottom + window.scrollY;
+            let maxHeight = dropdownHeight;
+
+            // Agar pastda joy yetmasa va tepada joy ko'p bo'lsa, tepaga qo'yamiz
+            if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                top =
+                    rect.top +
+                    window.scrollY -
+                    Math.min(dropdownHeight, spaceAbove);
+                maxHeight = Math.min(dropdownHeight, spaceAbove - 10); // 10px margin
+            } else if (spaceBelow < dropdownHeight) {
+                // Agar pastda joy yetmasa, mavjud joyga moslashtiramiz
+                maxHeight = Math.max(200, spaceBelow - 10); // minimum 200px
+            }
+
+            setDropdownPosition({
+                top,
+                left: rect.left + window.scrollX,
+                width: rect.width,
+                maxHeight,
+            });
+        }
+    };
+
     const toggleDropdown = () => {
+        if (!isOpen) {
+            updateDropdownPosition();
+        }
         setIsOpen(!isOpen);
         if (!isOpen) {
             setSearchTerm("");
@@ -138,7 +196,15 @@ const Select: React.FC<SelectProps> = ({
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                <div
+                    className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden"
+                    style={{
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                        width: dropdownPosition.width,
+                        maxHeight: dropdownPosition.maxHeight,
+                    }}
+                >
                     {/* Search Input (if searchable) */}
                     {searchable && (
                         <div className="p-3 border-b border-gray-200 dark:border-gray-600">
@@ -160,7 +226,10 @@ const Select: React.FC<SelectProps> = ({
                     )}
 
                     {/* Options List */}
-                    <div className="max-h-64 overflow-y-auto pb-2">
+                    <div
+                        className="overflow-y-auto pb-2"
+                        style={{ maxHeight: dropdownPosition.maxHeight - 60 }}
+                    >
                         {filteredOptions.length > 0 ? (
                             filteredOptions
                                 .filter(

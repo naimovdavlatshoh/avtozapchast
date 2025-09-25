@@ -1,18 +1,16 @@
 import axios from "axios";
-// import { handleAuthError } from "../utils/authUtils";
+import { handleAuthError } from "../utils/authUtils";
 export const BASE_URL = "https://apistore.afandicloud.uz/";
 
-// axios.interceptors.response.use(
-//     (response) => response,
-//     (error) => {
-
-//         if (handleAuthError(error)) {
-
-//             return Promise.resolve({ data: { handled: true } });
-//         }
-//         return Promise.reject(error);
-//     }
-// );
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (handleAuthError(error)) {
+            return Promise.resolve({ data: { handled: true } });
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const GetDataSimpleBlob = async (url: string, config: any = {}) => {
     const token = localStorage.getItem("token"); // yoki sessionStorage
@@ -220,5 +218,16 @@ export const UploadProductImage = async (imageFile: File) => {
 
 export const GetProductImage = async (imageId: number) => {
     const response = await GetDataSimpleBlob(`api/products/image/${imageId}`);
+    return response;
+};
+
+export const UpdateProductPrice = async (
+    productId: number,
+    sellingPrice: number
+) => {
+    const response = await PostDataTokenJson("api/products/updateprice", {
+        product_id: productId,
+        selling_price: sellingPrice,
+    });
     return response;
 };

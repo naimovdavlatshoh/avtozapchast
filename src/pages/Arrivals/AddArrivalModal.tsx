@@ -10,7 +10,6 @@ import {
     PostSimple,
 } from "../../service/data";
 import toast from "react-hot-toast";
-import Loader from "../../components/ui/loader/Loader";
 import { formatNumber } from "../../utils/numberFormat";
 
 interface Product {
@@ -47,6 +46,15 @@ export default function AddArrivalModal({
     const [searchingProducts, setSearchingProducts] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Kamida bitta to'liq mahsulot tanlanganligini tekshirish
+    const hasValidItems = items.some(
+        (item) =>
+            item.product_id > 0 &&
+            item.amount > 0 &&
+            item.receipt_price > 0 &&
+            item.selling_price > 0
+    );
 
     useEffect(() => {
         if (isOpen) {
@@ -363,20 +371,31 @@ export default function AddArrivalModal({
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex justify-end items-center gap-3 pt-4">
                         <Button
                             type="button"
                             onClick={handleClose}
                             variant="outline"
+                            className="px-4 py-2 text-sm h-10 flex items-center justify-center"
                         >
                             Bekor qilish
                         </Button>
                         <Button
                             type="submit"
-                            disabled={isLoading}
-                            className="bg-blue-500 hover:bg-blue-600"
+                            disabled={isLoading || !hasValidItems}
+                            className={`px-4 py-2 text-sm h-10 flex items-center justify-center ${
+                                hasValidItems && !isLoading
+                                    ? "bg-blue-500 hover:bg-blue-600"
+                                    : "bg-gray-400 cursor-not-allowed"
+                            }`}
                         >
-                            {isLoading ? <Loader /> : "Kirim qo'shish"}
+                            {isLoading ? (
+                                <div className="flex items-center gap-2">
+                                    <span>Yuklanmoqda...</span>
+                                </div>
+                            ) : (
+                                "Kirim qo'shish"
+                            )}
                         </Button>
                     </div>
                 </form>
