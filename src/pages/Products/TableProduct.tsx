@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import EditProductModal from "./EditProductModal";
-import BarcodeModal from "../../components/modals/BarcodeModal";
 import { GetDataSimpleBlob, UpdateProductPrice } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
 import { Modal } from "../../components/ui/modal";
@@ -37,9 +36,6 @@ const TableProduct: React.FC<TableProductProps> = ({
     const [imageUrls, setImageUrls] = useState<{ [key: number]: string }>({});
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [selectedImageUrl, setSelectedImageUrl] = useState<string>("");
-    const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
-    const [selectedBarcodeProduct, setSelectedBarcodeProduct] =
-        useState<Product | null>(null);
     const [editingProductId, setEditingProductId] = useState<number | null>(
         null
     );
@@ -62,13 +58,80 @@ const TableProduct: React.FC<TableProductProps> = ({
     };
 
     const handleBarcodeClick = (product: Product) => {
-        setSelectedBarcodeProduct(product);
-        setBarcodeModalOpen(true);
-    };
+        // Modal ochmasdan to'g'ridan-to'g'ri print qilish
+        const printBarcode = () => {
+            // Yangi oynada barcode sahifasini yaratish
+            const printWindow = window.open("", "_blank");
+            if (printWindow) {
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Barcode Print</title>
+                        <style>
+                            @page {
+                                size: 40mm 30mm;
+                                margin: 0;
+                            }
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                width: 40mm;
+                                height: 30mm;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-family: Arial, sans-serif;
+                            }
+                            .barcode-container {
+                                width: 100%;
+                                height: 100%;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                text-align: center;
+                            }
+                            .barcode-svg {
+                                max-width: 100%;
+                                height: auto;
+                                max-height: 25mm;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="barcode-container">
+                            <svg class="barcode-svg" id="barcode"></svg>
+                        </div>
+                        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+                        <script>
+                            JsBarcode("#barcode", "${product.barcode}", {
+                                width: 2.5,
+                                height: 80,
+                                displayValue: true,
+                                fontSize: 10,
+                                margin: 5,
+                                format: "CODE128"
+                            });
 
-    const handleCloseBarcodeModal = () => {
-        setBarcodeModalOpen(false);
-        setSelectedBarcodeProduct(null);
+                            // Avtomatik print
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                    window.onafterprint = function() {
+                                        window.close();
+                                    };
+                                }, 500);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+        };
+
+        printBarcode();
     };
 
     const handleEditPrice = (product: Product) => {
@@ -479,16 +542,6 @@ const TableProduct: React.FC<TableProductProps> = ({
                     </div>
                 </div>
             </Modal>
-
-            {/* Barcode modal */}
-            {barcodeModalOpen && selectedBarcodeProduct && (
-                <BarcodeModal
-                    isOpen={barcodeModalOpen}
-                    onClose={handleCloseBarcodeModal}
-                    barcodeValue={selectedBarcodeProduct.barcode.toString()}
-                    productName={selectedBarcodeProduct.product_name}
-                />
-            )}
         </div>
     );
 };

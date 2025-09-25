@@ -34,7 +34,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
             />
 
             {/* Modal content */}
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full mx-4 z-[100000]">
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl   mx-4 z-[100000]">
                 {children}
             </div>
         </div>
