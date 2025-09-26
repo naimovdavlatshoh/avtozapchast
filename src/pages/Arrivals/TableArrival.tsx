@@ -13,12 +13,14 @@ interface ArrivalItem {
     receipt_price: number;
     created_at: string;
     updated_at?: string;
+    cash_type_text: string;
 }
 
 interface Arrival {
     arrival_id: number;
     arrival_number?: string;
     total_price: number;
+    cash_type_text: string;
     comments?: string;
     created_at: string;
     updated_at?: string;
@@ -111,7 +113,7 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                         {getTotalAmount(arrival.items)}
                                     </td> */}
                                     <td className="px-6 py-4">
-                                        {formatNumber(arrival.total_price)} so'm
+                                        {formatNumber(arrival.total_price)} {arrival.cash_type_text}
                                     </td>
                                     <td className="px-6 py-4">
                                         <button
@@ -185,7 +187,7 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                             {formatNumber(
                                                 selectedArrival.total_price
                                             )}{" "}
-                                            so'm
+                                            {selectedArrival.cash_type_text}
                                         </p>
                                     </div>
                                     <div>
@@ -256,14 +258,14 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                                         {formatNumber(
                                                             item.receipt_price
                                                         )}{" "}
-                                                        so'm
+                                                       {selectedArrival.cash_type_text}
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-900 font-medium">
                                                         {formatNumber(
                                                             item.amount *
                                                                 item.receipt_price
                                                         )}{" "}
-                                                        so'm
+                                                        {selectedArrival.cash_type_text}
                                                     </td>
                                                 </tr>
                                             )

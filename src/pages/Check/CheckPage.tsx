@@ -50,14 +50,21 @@ const CheckPage: React.FC = () => {
                 navigate("/pos");
             }
         } else {
-            // Agar ma'lumot yo'q bo'lsa, POS sahifasiga qaytish
             navigate("/pos");
         }
     }, [location.state, searchParams, navigate]);
 
-    const handlePrint = () => {
-        window.print();
-    };
+    // Avtomatik pechat qilish
+    useEffect(() => {
+        if (saleData) {
+            // Kichik kechikish bilan avtomatik pechat qilish
+            const timer = setTimeout(() => {
+                window.print();
+            }, 100); // 1 soniya kechikish
+
+            return () => clearTimeout(timer);
+        }
+    }, [saleData]);
 
     if (!saleData) {
         return (
@@ -189,28 +196,6 @@ const CheckPage: React.FC = () => {
                 {/* Xabar */}
                 <div className="text-center mb-6">
                     <p className="font-bold">Спасибо! Ждем вас снова!</p>
-                </div>
-
-                {/* Tugma */}
-                <div className="text-center">
-                    <button
-                        onClick={handlePrint}
-                        className="bg-blue-600 text-white  px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                            />
-                        </svg>
-                    </button>
                 </div>
             </div>
         </div>

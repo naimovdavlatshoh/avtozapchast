@@ -388,7 +388,6 @@ const POSPage: React.FC = () => {
             loadClients();
         } else {
             setSelectedClient(null);
-
         }
     };
 

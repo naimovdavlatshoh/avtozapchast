@@ -21,7 +21,7 @@ interface Product {
 interface ArrivalItem {
     product_id: number;
     amount: number;
-    receipt_price: number;
+    receipt_price: number | string;
     selling_price: number;
 }
 
@@ -40,6 +40,8 @@ export default function AddArrivalModal({
 }: AddArrivalModalProps) {
     const [arrivalNumber, setArrivalNumber] = useState("");
     const [comments, setComments] = useState("");
+    const [cashType, setCashType] = useState<0 | 1>(0); // 0 - dollar, 1 - so'm
+    const [dollarRate, setDollarRate] = useState<number>(0);
     const [items, setItems] = useState<ArrivalItem[]>([
         { product_id: 0, amount: 0, receipt_price: 0, selling_price: 0 },
     ]);
@@ -52,6 +54,7 @@ export default function AddArrivalModal({
         (item) =>
             item.product_id > 0 &&
             item.amount > 0 &&
+            typeof item.receipt_price === "number" &&
             item.receipt_price > 0 &&
             item.selling_price > 0
     );
@@ -59,6 +62,7 @@ export default function AddArrivalModal({
     useEffect(() => {
         if (isOpen) {
             fetchProducts();
+            fetchDollarRate();
         }
     }, [isOpen]);
 
@@ -71,6 +75,16 @@ export default function AddArrivalModal({
         } catch (error) {
             console.error("Mahsulotlarni yuklashda xatolik:", error);
             toast.error("Mahsulotlarni yuklashda xatolik");
+        }
+    };
+
+    const fetchDollarRate = async () => {
+        try {
+            const res = await GetDataSimple("api/arrival/dollar");
+            setDollarRate(res?.dollar_rate || 12500);
+        } catch (error) {
+            console.error("Dollar kursini yuklashda xatolik:", error);
+            toast.error("Dollar kursini yuklashda xatolik");
         }
     };
 
@@ -127,6 +141,63 @@ export default function AddArrivalModal({
         setItems(newItems);
     };
 
+    // Valyuta konvertatsiya funksiyalari
+    const convertToSom = (dollarAmount: number) => {
+        return dollarAmount * dollarRate;
+    };
+
+    const convertToDollar = (somAmount: number) => {
+        return dollarRate > 0 ? somAmount / dollarRate : 0;
+    };
+
+    // Raqamlarni bo'shliq bilan formatlash
+    const formatNumberWithSpaces = (value: string | number) => {
+        if (!value && value !== ".") return "";
+        const stringValue = value.toString();
+        // Remove any existing spaces
+        const cleanValue = stringValue.replace(/\s/g, "");
+
+        // Agar faqat nuqta bo'lsa, uni qaytarish
+        if (cleanValue === ".") return ".";
+
+        // Split by decimal point
+        const parts = cleanValue.split(".");
+        // Format integer part with spaces
+        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        // Return formatted number
+        return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+    };
+
+    // Valyuta o'zgarganida faqat kirim narxini qayta hisoblash
+    const handleCashTypeChange = (newCashType: 0 | 1) => {
+        setCashType(newCashType);
+
+        if (dollarRate > 0) {
+            const newItems = items.map((item) => {
+                if (
+                    typeof item.receipt_price === "number" &&
+                    item.receipt_price > 0
+                ) {
+                    if (newCashType === 0) {
+                        // Dollar tanlandi - kirim narxini dollarga aylantirish
+                        return {
+                            ...item,
+                            receipt_price: convertToDollar(item.receipt_price),
+                        };
+                    } else {
+                        // So'm tanlandi - kirim narxini so'mga aylantirish
+                        return {
+                            ...item,
+                            receipt_price: convertToSom(item.receipt_price),
+                        };
+                    }
+                }
+                return item;
+            });
+            setItems(newItems);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -135,6 +206,7 @@ export default function AddArrivalModal({
             (item) =>
                 item.product_id > 0 &&
                 item.amount > 0 &&
+                typeof item.receipt_price === "number" &&
                 item.receipt_price > 0 &&
                 item.selling_price > 0
         );
@@ -149,6 +221,7 @@ export default function AddArrivalModal({
             const data = {
                 arrival_number: arrivalNumber || undefined,
                 comments: comments || undefined,
+                cash_type: cashType,
                 items: validItems,
             };
 
@@ -173,6 +246,7 @@ export default function AddArrivalModal({
     const resetForm = () => {
         setArrivalNumber("");
         setComments("");
+        setCashType(0);
         setItems([
             { product_id: 0, amount: 0, receipt_price: 0, selling_price: 0 },
         ]);
@@ -215,6 +289,35 @@ export default function AddArrivalModal({
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             rows={3}
                         />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="cashType">Valyuta</Label>
+                            <Select
+                                defaultValue={cashType.toString()}
+                                onChange={(value: string) =>
+                                    handleCashTypeChange(
+                                        parseInt(value) as 0 | 1
+                                    )
+                                }
+                                options={[
+                                    { value: 0, label: "Dollar ($)" },
+                                    { value: 1, label: "So'm (UZS)" },
+                                ]}
+                                placeholder="Valyutani tanlang"
+                            />
+                        </div>
+                        <div>
+                            <Label>Dollar kursi</Label>
+                            <Input
+                                type="text"
+                                value={formatNumber(dollarRate)}
+                                disabled
+                                placeholder="Dollar kursi yuklanmoqda..."
+                                className="bg-gray-100"
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -295,36 +398,94 @@ export default function AddArrivalModal({
 
                                         <div>
                                             <Label className="text-xs">
-                                                Kirim narxi
+                                                Kirim narxi (
+                                                {cashType === 0 ? "$" : "UZS"})
                                             </Label>
-                                            <Input
+                                            <input
                                                 type="text"
-                                                value={
-                                                    item.receipt_price
-                                                        ? formatNumber(
-                                                              item.receipt_price
-                                                          )
-                                                        : ""
-                                                }
+                                                value={formatNumberWithSpaces(
+                                                    item.receipt_price || ""
+                                                )}
                                                 onChange={(e) => {
                                                     const value =
                                                         e.target.value.replace(
                                                             /\s/g,
                                                             ""
+                                                        ); // Remove spaces for processing
+
+                                                    // Allow empty string, numbers, and decimal points
+                                                    if (
+                                                        value === "" ||
+                                                        value === "." ||
+                                                        /^\d*\.?\d*$/.test(
+                                                            value
+                                                        )
+                                                    ) {
+                                                        // Update the input display - faqat string sifatida saqlash
+                                                        updateItem(
+                                                            index,
+                                                            "receipt_price",
+                                                            value
                                                         );
-                                                    updateItem(
-                                                        index,
-                                                        "receipt_price",
-                                                        parseFloat(value) || 0
-                                                    );
+                                                    }
                                                 }}
-                                                placeholder="Kirim narxi"
+                                                onBlur={(e) => {
+                                                    // Input'dan chiqganda raqamga aylantirish
+                                                    const value =
+                                                        e.target.value.replace(
+                                                            /\s/g,
+                                                            ""
+                                                        );
+                                                    if (
+                                                        value === "" ||
+                                                        value === "."
+                                                    ) {
+                                                        updateItem(
+                                                            index,
+                                                            "receipt_price",
+                                                            0
+                                                        );
+                                                    } else {
+                                                        const parsedValue =
+                                                            parseFloat(value);
+                                                        if (
+                                                            !isNaN(parsedValue)
+                                                        ) {
+                                                            updateItem(
+                                                                index,
+                                                                "receipt_price",
+                                                                parsedValue
+                                                            );
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder={`Kirim narxi (${
+                                                    cashType === 0 ? "$" : "UZS"
+                                                })`}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
+                                            {dollarRate > 0 &&
+                                                typeof item.receipt_price ===
+                                                    "number" && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {cashType === 0
+                                                            ? `≈ ${formatNumber(
+                                                                  convertToSom(
+                                                                      item.receipt_price
+                                                                  )
+                                                              )} UZS`
+                                                            : `≈ ${formatNumber(
+                                                                  convertToDollar(
+                                                                      item.receipt_price
+                                                                  )
+                                                              )} $`}
+                                                    </p>
+                                                )}
                                         </div>
 
                                         <div>
                                             <Label className="text-xs">
-                                                Sotish narxi
+                                                Sotish narxi (UZS)
                                             </Label>
                                             <Input
                                                 type="text"
@@ -347,7 +508,7 @@ export default function AddArrivalModal({
                                                         parseFloat(value) || 0
                                                     );
                                                 }}
-                                                placeholder="Sotish narxi"
+                                                placeholder="Sotish narxi (UZS)"
                                             />
                                         </div>
                                     </div>
