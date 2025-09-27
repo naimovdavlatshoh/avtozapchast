@@ -56,16 +56,16 @@ const CheckPage: React.FC = () => {
     }, [location.state, searchParams, navigate]);
 
     // Avtomatik pechat qilish
-    useEffect(() => {
-        if (saleData) {
-            // Kichik kechikish bilan avtomatik pechat qilish
-            const timer = setTimeout(() => {
-                window.print();
-            }, 100); // 1 soniya kechikish
+    // useEffect(() => {
+    //     if (saleData) {
+    //         // Kichik kechikish bilan avtomatik pechat qilish
+    //         const timer = setTimeout(() => {
+    //             window.print();
+    //         }, 100); // 1 soniya kechikish
 
-            return () => clearTimeout(timer);
-        }
-    }, [saleData]);
+    //         return () => clearTimeout(timer);
+    //     }
+    // }, [saleData]);
 
     if (!saleData) {
         return (
@@ -83,7 +83,7 @@ const CheckPage: React.FC = () => {
             <div className="bg-white rounded-lg  p-4 max-w-[302px] w-full">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                    <h1 className="text-lg font-bold text-gray-900 mb-4">
                         Чек продажи
                     </h1>
                 </div>
@@ -94,11 +94,11 @@ const CheckPage: React.FC = () => {
                         <span className="text-gray-600">Бармен:</span>
                         <span className="font-medium">test</span>
                     </div> */}
-                    <div className="flex justify-between">
-                        <span className=" font-bold">Номер заказа:</span>
+                    <div className="flex text-xs justify-between">
+                        <span className="text-xs font-bold">Номер заказа:</span>
                         <span className="font-bold">#{saleData.saleId}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex text-xs justify-between">
                         <span className="font-bold">Дата:</span>
                         <span className="font-bold">{saleData.timestamp}</span>
                     </div>
@@ -106,13 +106,13 @@ const CheckPage: React.FC = () => {
                     {/* Qarz ma'lumotlari */}
                     {saleData.isDebt && saleData.selectedClient && (
                         <>
-                            <div className="flex justify-between">
+                            <div className="flex text-xs justify-between">
                                 <span className="font-bold">Клиент:</span>
                                 <span className="font-bold">
                                     {saleData.selectedClient.client_name}
                                 </span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex text-xs justify-between">
                                 <span className="font-bold">Сумма долга:</span>
                                 <span className="font-bold text-red-600">
                                     {formatNumber(
@@ -126,7 +126,7 @@ const CheckPage: React.FC = () => {
 
                     {/* Izoh */}
                     {saleData.comments && (
-                        <div className="flex justify-between">
+                        <div className="flex text-xs justify-between">
                             <span className="font-bold">Комментарий:</span>
                             <span className="font-bold text-gray-600">
                                 {saleData.comments}
@@ -140,19 +140,19 @@ const CheckPage: React.FC = () => {
                     {saleData.cart.map((item) => (
                         <div
                             key={item.product_id}
-                            className="flex justify-between items-center py-1"
+                            className="flex text-xs justify-between items-center py-1"
                         >
                             <div className="flex-1">
-                                <p className="text-sm font-bold w-4/5">
+                                <p className="text-xs font-bold w-4/5">
                                     {item.product_name}
                                 </p>
-                                <p className="text-sm font-bold">
+                                <p className="text-xs font-bold">
                                     {item.quantity} x{" "}
                                     {formatNumber(item.selling_price)} UZS
                                 </p>
                             </div>
                             <div className="text-right">
-                                <span className="font-bold text-gray-900">
+                                <span className="text-xs font-bold text-gray-900">
                                     {formatNumber(item.total)} UZS
                                 </span>
                             </div>
@@ -162,7 +162,7 @@ const CheckPage: React.FC = () => {
 
                 {/* Jami summa va chegirma */}
                 <div className="border-t border-gray-300 pt-4 mb-2 space-y-2">
-                    <div className="flex justify-between items-center text-lg font-bold text-gray-900">
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-900">
                         <span>Итого:</span>
                         <span>{formatNumber(saleData.totalAmount)} UZS</span>
                     </div>
@@ -195,7 +195,7 @@ const CheckPage: React.FC = () => {
                 </div>
 
                 {/* Xabar */}
-                <div className="text-center mb-3">
+                <div className="text-center text-xs mb-3">
                     <p className="font-bold">Спасибо! Ждем вас снова!</p>
                 </div>
             </div>
