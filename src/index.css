@@ -805,9 +805,4 @@ span.flatpickr-weekday,
         margin: 0 !important;
         padding: 0 !important;
     }
-
-    @page {
-        size: 40mm 30mm;
-        margin: 0;
-    }
 }

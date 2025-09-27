@@ -61,7 +61,7 @@ const CheckPage: React.FC = () => {
             // Kichik kechikish bilan avtomatik pechat qilish
             const timer = setTimeout(() => {
                 window.print();
-            }, 1000); // 1 soniya kechikish
+            }, 100); // 1 soniya kechikish
 
             return () => clearTimeout(timer);
         }
@@ -79,189 +79,127 @@ const CheckPage: React.FC = () => {
     }
 
     return (
-        <>
-            {/* Print uchun CSS */}
-            <style>
-                {`
-                    @media print {
-                        body * {
-                            visibility: hidden;
-                        }
-                        .print-area, .print-area * {
-                            visibility: visible;
-                        }
-                        .print-area {
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 80mm !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
-                        }
-                        .no-print {
-                            display: none !important;
-                        }
-                        .print-area {
-                            box-shadow: none !important;
-                            border: none !important;
-                        }
-                    }
-                `}
-            </style>
+        <div className=" bg-gray-100 flex items-start justify-center pt-4 p-4">
+            <div className="bg-white rounded-lg  p-4 max-w-[302px] w-full">
+                {/* Header */}
+                <div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
+                        Чек продажи
+                    </h1>
+                </div>
 
-            <div className="min-h-screen bg-gray-100 flex items-start justify-center pt-10 p-4">
-                <div
-                    className="print-area bg-white rounded-lg shadow-lg p-2 w-full"
-                    style={{
-                        maxWidth: "80mm",
-                        minHeight: "auto",
-                        height: "auto",
-                    }}
-                >
-                    {/* Header */}
-                    <div
-                        className="text-center mb-4"
-                        style={{ maxWidth: "70mm", margin: "0 auto" }}
-                    >
-                        <h1 className="text-lg font-bold text-gray-900 mb-2">
-                            Чек продажи
-                        </h1>
+                {/* Ma'lumotlar */}
+                <div className="space-y-2 mb-2 text-sm">
+                    {/* <div className="flex justify-between">
+                        <span className="text-gray-600">Бармен:</span>
+                        <span className="font-medium">test</span>
+                    </div> */}
+                    <div className="flex justify-between">
+                        <span className=" font-bold">Номер заказа:</span>
+                        <span className="font-bold">#{saleData.saleId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="font-bold">Дата:</span>
+                        <span className="font-bold">{saleData.timestamp}</span>
                     </div>
 
-                    {/* Ma'lumotlar */}
-                    <div
-                        className="space-y-1 mb-2 text-xs"
-                        style={{ maxWidth: "70mm", margin: "0 auto" }}
-                    >
-                        <div className="flex justify-between">
-                            <span className=" font-bold">Номер заказа:</span>
-                            <span className="font-bold">
-                                #{saleData.saleId}
-                            </span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="font-bold">Дата:</span>
-                            <span className="font-bold">
-                                {saleData.timestamp}
-                            </span>
-                        </div>
-
-                        {/* Qarz ma'lumotlari */}
-                        {saleData.isDebt && saleData.selectedClient && (
-                            <>
-                                <div className="flex justify-between">
-                                    <span className="font-bold">Клиент:</span>
-                                    <span className="font-bold">
-                                        {saleData.selectedClient.client_name}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="font-bold">
-                                        Сумма долга:
-                                    </span>
-                                    <span className="font-bold text-red-600">
-                                        {formatNumber(
-                                            parseFloat(saleData.debtAmount)
-                                        )}{" "}
-                                        UZS
-                                    </span>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Izoh */}
-                        {saleData.comments && (
+                    {/* Qarz ma'lumotlari */}
+                    {saleData.isDebt && saleData.selectedClient && (
+                        <>
                             <div className="flex justify-between">
-                                <span className="font-bold">Комментарий:</span>
-                                <span className="font-bold text-gray-600">
-                                    {saleData.comments}
+                                <span className="font-bold">Клиент:</span>
+                                <span className="font-bold">
+                                    {saleData.selectedClient.client_name}
                                 </span>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Mahsulotlar ro'yxati */}
-                    <div
-                        className="mb-2"
-                        style={{ maxWidth: "70mm", margin: "0 auto" }}
-                    >
-                        {saleData.cart.map((item) => (
-                            <div
-                                key={item.product_id}
-                                className="flex justify-between items-start py-1"
-                            >
-                                <div className="flex-1 pr-2">
-                                    <p className="text-xs font-bold leading-tight mb-1">
-                                        {item.product_name}
-                                    </p>
-                                    <p className="text-xs font-semibold text-gray-600">
-                                        {item.quantity} x{" "}
-                                        {formatNumber(item.selling_price)} UZS
-                                    </p>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                    <span className="font-bold text-gray-900 text-xs">
-                                        {formatNumber(item.total)} UZS
-                                    </span>
-                                </div>
+                            <div className="flex justify-between">
+                                <span className="font-bold">Сумма долга:</span>
+                                <span className="font-bold text-red-600">
+                                    {formatNumber(
+                                        parseFloat(saleData.debtAmount)
+                                    )}{" "}
+                                    UZS
+                                </span>
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    )}
 
-                    {/* Jami summa va chegirma */}
-                    <div
-                        className="border-t border-gray-300 pt-2 mb-2 space-y-1"
-                        style={{ maxWidth: "70mm", margin: "0 auto" }}
-                    >
-                        <div className="flex justify-between items-center text-sm font-bold text-gray-900">
-                            <span>Итого:</span>
-                            <span>
-                                {formatNumber(saleData.totalAmount)} UZS
+                    {/* Izoh */}
+                    {saleData.comments && (
+                        <div className="flex justify-between">
+                            <span className="font-bold">Комментарий:</span>
+                            <span className="font-bold text-gray-600">
+                                {saleData.comments}
                             </span>
                         </div>
+                    )}
+                </div>
 
-                        {/* Chegirma ko'rsatish */}
-                        {saleData.discount &&
-                            parseFloat(saleData.discount) > 0 && (
-                                <>
-                                    <div className="flex justify-between items-center text-red-600 text-xs">
-                                        <span>Скидка:</span>
-                                        <span className="font-bold">
-                                            -
-                                            {formatNumber(
-                                                parseFloat(saleData.discount)
-                                            )}{" "}
-                                            UZS
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm font-bold text-green-600 border-t pt-1">
-                                        <span>К оплате:</span>
-                                        <span className="text-base">
-                                            {formatNumber(
-                                                saleData.totalAmount -
-                                                    parseFloat(
-                                                        saleData.discount
-                                                    )
-                                            )}{" "}
-                                            UZS
-                                        </span>
-                                    </div>
-                                </>
-                            )}
+                {/* Mahsulotlar ro'yxati */}
+                <div className=" mb-2">
+                    {saleData.cart.map((item) => (
+                        <div
+                            key={item.product_id}
+                            className="flex justify-between items-center py-1"
+                        >
+                            <div className="flex-1">
+                                <p className="text-sm font-bold w-4/5">
+                                    {item.product_name}
+                                </p>
+                                <p className="text-sm font-bold">
+                                    {item.quantity} x{" "}
+                                    {formatNumber(item.selling_price)} UZS
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <span className="font-bold text-gray-900">
+                                    {formatNumber(item.total)} UZS
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Jami summa va chegirma */}
+                <div className="border-t border-gray-300 pt-4 mb-2 space-y-2">
+                    <div className="flex justify-between items-center text-lg font-bold text-gray-900">
+                        <span>Итого:</span>
+                        <span>{formatNumber(saleData.totalAmount)} UZS</span>
                     </div>
 
-                    {/* Xabar */}
-                    <div
-                        className="text-center mb-4"
-                        style={{ maxWidth: "70mm", margin: "0 auto" }}
-                    >
-                        <p className="font-bold text-xs">
-                            Спасибо! Ждем вас снова!
-                        </p>
-                    </div>
+                    {/* Chegirma ko'rsatish */}
+                    {saleData.discount && parseFloat(saleData.discount) > 0 && (
+                        <>
+                            <div className="flex justify-between items-center text-red-600">
+                                <span>Скидка:</span>
+                                <span className="font-bold">
+                                    -
+                                    {formatNumber(
+                                        parseFloat(saleData.discount)
+                                    )}{" "}
+                                    UZS
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center text-lg font-bold text-green-600 border-t pt-2">
+                                <span>К оплате:</span>
+                                <span className="text-xl">
+                                    {formatNumber(
+                                        saleData.totalAmount -
+                                            parseFloat(saleData.discount)
+                                    )}{" "}
+                                    UZS
+                                </span>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Xabar */}
+                <div className="text-center mb-3">
+                    <p className="font-bold">Спасибо! Ждем вас снова!</p>
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 
