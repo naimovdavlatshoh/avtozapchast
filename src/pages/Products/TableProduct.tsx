@@ -109,7 +109,7 @@ const TableProduct: React.FC<TableProductProps> = ({
                                 width: 2.5,
                                 height: 80,
                                 displayValue: true,
-                                fontSize: 10,
+                                fontSize: 16,
                                 margin: 5,
                                 format: "CODE128"
                             });
