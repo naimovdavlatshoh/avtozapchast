@@ -1,165 +1,138 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "../ui/modal";
-import Button from "../ui/button/Button";
-import InputField from "../form/input/InputField";
-import TextArea from "../form/input/TextArea";
+import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import Button from "../ui/button/Button";
 import { PostDataTokenJson } from "../../service/data";
 import toast from "react-hot-toast";
+import { formatNumber } from "../../utils/numberFormat";
 
 interface DollarRateModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    currentRate?: number;
+    currentRate: number;
 }
 
 export default function DollarRateModal({
     isOpen,
     onClose,
     onSuccess,
-    currentRate = 0,
+    currentRate,
 }: DollarRateModalProps) {
-    const [formData, setFormData] = useState({
-        dollar_rate: currentRate.toString(),
-        comments: "",
-    });
+    const [newRate, setNewRate] = useState<string>("");
     const [isLoading, setIsLoading] = useState(false);
-    const [errors, setErrors] = useState<{
-        dollar_rate?: string;
-    }>({});
+
+    useEffect(() => {
+        if (isOpen) {
+            setNewRate(currentRate.toString());
+        }
+    }, [isOpen, currentRate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
-        const newErrors: { dollar_rate?: string } = {};
-
-        if (!formData.dollar_rate.trim()) {
-            newErrors.dollar_rate = "Курс доллара обязателен";
-        } else if (
-            isNaN(Number(formData.dollar_rate)) ||
-            Number(formData.dollar_rate) <= 0
-        ) {
-            newErrors.dollar_rate = "Введите корректный курс доллара";
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
+        if (!newRate || parseFloat(newRate) <= 0) {
+            toast.error("To'g'ri kurs qiymatini kiriting!");
             return;
         }
 
         setIsLoading(true);
         try {
-            await PostDataTokenJson("api/payments/dollarcreate", {
-                dollar_rate: Number(formData.dollar_rate),
-                comments: formData.comments.trim() || undefined,
-            });
+            const response = await PostDataTokenJson(
+                "api/payments/dollarcreate",
+                {
+                    dollar_rate: parseFloat(newRate),
+                }
+            );
 
-            toast.success("Курс доллара успешно обновлен");
-            onSuccess();
-            onClose();
-
-            // Reset form
-            setFormData({
-                dollar_rate: "",
-                comments: "",
-            });
-            setErrors({});
+            if (response?.status === 200) {
+                toast.success("Dollar kursi muvaffaqiyatli yangilandi!");
+                onSuccess();
+            } else {
+                toast.error("Kurs yangilashda xatolik!");
+            }
         } catch (error) {
-            console.error("Error updating dollar rate:", error);
-            toast.error("Ошибка при обновлении курса доллара");
+            console.error("Kurs yangilashda xatolik:", error);
+            toast.error("Kurs yangilashda xatolik!");
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleClose = () => {
-        if (!isLoading) {
-            onClose();
-            setErrors({});
-        }
+        setNewRate("");
+        onClose();
     };
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose}>
             <div className="p-6">
-                <div className="mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                        Изменить курс доллара
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Текущий курс:{" "}
-                        <span className="font-medium">{currentRate} сум</span>
-                    </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Dollar Rate */}
+                <h2 className="text-xl font-semibold mb-4">
+                    Dollar kursini yangilash
+                </h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <Label htmlFor="dollar_rate">
-                            Новый курс доллара{" "}
-                            <span className="text-red-500">*</span>
-                        </Label>
-                        <InputField
-                            id="dollar_rate"
-                            type="number"
-                            placeholder="Введите курс доллара"
-                            value={formData.dollar_rate}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    dollar_rate: e.target.value,
-                                })
-                            }
-                            error={!!errors.dollar_rate}
-                        />
-                        {errors.dollar_rate && (
-                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                {errors.dollar_rate}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Comments */}
-                    <div>
-                        <Label htmlFor="comments">Комментарий</Label>
-                        <TextArea
-                            placeholder="Введите комментарий (не обязательно)"
-                            value={formData.comments}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    comments: e.target.value,
-                                })
-                            }
-                            rows={3}
+                        <Label htmlFor="currentRate">Joriy kurs</Label>
+                        <Input
+                            id="currentRate"
+                            type="text"
+                            value={formatNumber(currentRate)}
+                            disabled
+                            className="bg-gray-100"
                         />
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div>
+                        <Label htmlFor="newRate">Yangi kurs (UZS)</Label>
+                        <Input
+                            id="newRate"
+                            type="text"
+                            value={newRate}
+                            onChange={(e) => {
+                                const value = e.target.value.replace(
+                                    /[^\d.]/g,
+                                    ""
+                                );
+
+                                // Faqat bitta nuqta ruxsat berish
+                                const parts = value.split(".");
+                                if (parts.length > 2) return;
+
+                                // Nuqta dan keyin maksimal 2 ta raqam
+                                if (parts[1] && parts[1].length > 2) return;
+
+                                setNewRate(value);
+                            }}
+                            placeholder="Yangi kurs qiymatini kiriting"
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
                         <Button
                             type="button"
-                            variant="outline"
                             onClick={handleClose}
-                            disabled={isLoading}
+                            variant="outline"
+                            className="px-4 py-2"
                         >
-                            Отмена
+                            Bekor qilish
                         </Button>
                         <Button
                             type="submit"
-                            disabled={isLoading}
-                            className="min-w-[100px]"
+                            disabled={
+                                isLoading ||
+                                !newRate ||
+                                parseFloat(newRate) <= 0
+                            }
+                            className={`px-4 py-2 ${
+                                isLoading ||
+                                !newRate ||
+                                parseFloat(newRate) <= 0
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-blue-500 hover:bg-blue-600"
+                            }`}
                         >
-                            {isLoading ? (
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    <span>Сохранение...</span>
-                                </div>
-                            ) : (
-                                "Обновить"
-                            )}
+                            {isLoading ? "Yuklanmoqda..." : "Yangilash"}
                         </Button>
                     </div>
                 </form>

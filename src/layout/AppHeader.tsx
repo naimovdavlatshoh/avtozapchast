@@ -5,13 +5,14 @@ import { useSearch } from "../context/SearchContext";
 // import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 // import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
-// import DollarRateModal from "../components/modals/DollarRateModal";
-// import { GetDataSimple } from "../service/data";
+import DollarRateModal from "../components/modals/DollarRateModal";
+import { GetDataSimple } from "../service/data";
+import { formatNumber } from "../utils/numberFormat";
 
 const AppHeader: React.FC = () => {
     const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-    // const [dollarRate, setDollarRate] = useState<number>(0);
-    // const [dollarRateModalOpen, setDollarRateModalOpen] = useState(false);
+    const [dollarRate, setDollarRate] = useState<number>(0);
+    const [dollarRateModalOpen, setDollarRateModalOpen] = useState(false);
     const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
     const { searchQuery, setSearchQuery, setCurrentPage } = useSearch();
     const location = useLocation();
@@ -67,16 +68,15 @@ const AppHeader: React.FC = () => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Fetch dollar rate
-    // const fetchDollarRate = async () => {
-    //     try {
-    //         const response: any = await GetDataSimple("api/payments/dollar");
-    //         const rate =
-    //             response?.dollar_rate || response?.data?.dollar_rate || 0;
-    //         setDollarRate(rate);
-    //     } catch (error) {
-    //         console.error("Error fetching dollar rate:", error);
-    //     }
-    // };
+    const fetchDollarRate = async () => {
+        try {
+            const response: any = await GetDataSimple("api/arrival/dollar");
+            const rate = response?.dollar_rate || 0;
+            setDollarRate(rate);
+        } catch (error) {
+            console.error("Error fetching dollar rate:", error);
+        }
+    };
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -94,9 +94,9 @@ const AppHeader: React.FC = () => {
     }, []);
 
     // Fetch dollar rate on component mount
-    // useEffect(() => {
-    //     fetchDollarRate();
-    // }, []);
+    useEffect(() => {
+        fetchDollarRate();
+    }, []);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
@@ -180,6 +180,35 @@ const AppHeader: React.FC = () => {
 
                     <div className="flex items-center gap-4">
                         {/* Dollar Rate Display */}
+                        <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center gap-1">
+                                <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                                    $
+                                </span>
+                                <span className="text-blue-700 dark:text-blue-300 font-medium text-sm">
+                                    {formatNumber(dollarRate)}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setDollarRateModalOpen(true)}
+                                className="p-1 hover:bg-green-100 dark:hover:bg-green-800/30 rounded transition-colors"
+                                title="Kursni yangilash"
+                            >
+                                <svg
+                                    className="w-3 h-3 text-blue-600 dark:text-blue-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
 
                         {/* Search Input */}
                         <div className="block">
@@ -218,7 +247,6 @@ const AppHeader: React.FC = () => {
                                 </div>
                             </form>
                         </div>
-
                     </div>
                 </div>
                 <div
@@ -227,22 +255,20 @@ const AppHeader: React.FC = () => {
                     } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
                 >
                     <div className="flex items-center gap-2 2xsm:gap-3">
-                        {/* <!-- Dark Mode Toggler --> */}
-                        {/* <ThemeToggleButton /> */}
-                        {/* <!-- Dark Mode Toggler --> */}
-                        {/* <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        {/* Dollar Rate Display - Mobile */}
+                        <div className="flex lg:hidden items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                             <div className="flex items-center gap-1">
                                 <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
                                     $
                                 </span>
                                 <span className="text-blue-700 dark:text-blue-300 font-medium text-sm">
-                                    {dollarRate.toLocaleString("ru-RU")}
+                                    {formatNumber(dollarRate)}
                                 </span>
                             </div>
                             <button
                                 onClick={() => setDollarRateModalOpen(true)}
                                 className="p-1 hover:bg-green-100 dark:hover:bg-green-800/30 rounded transition-colors"
-                                title="Изменить курс"
+                                title="Kursni yangilash"
                             >
                                 <svg
                                     className="w-3 h-3 text-blue-600 dark:text-blue-400"
@@ -258,7 +284,7 @@ const AppHeader: React.FC = () => {
                                     />
                                 </svg>
                             </button>
-                        </div> */}
+                        </div>
                         {/* <NotificationDropdown /> */}
                         {/* <!-- Notification Menu Area --> */}
                     </div>
@@ -268,7 +294,7 @@ const AppHeader: React.FC = () => {
             </div>
 
             {/* Dollar Rate Modal */}
-            {/* <DollarRateModal
+            <DollarRateModal
                 isOpen={dollarRateModalOpen}
                 onClose={() => setDollarRateModalOpen(false)}
                 onSuccess={() => {
@@ -276,7 +302,7 @@ const AppHeader: React.FC = () => {
                     setDollarRateModalOpen(false);
                 }}
                 currentRate={dollarRate}
-            /> */}
+            />
         </header>
     );
 };
