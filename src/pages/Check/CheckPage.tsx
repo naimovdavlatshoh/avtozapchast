@@ -56,16 +56,16 @@ const CheckPage: React.FC = () => {
     }, [location.state, searchParams, navigate]);
 
     // Avtomatik pechat qilish
-    // useEffect(() => {
-    //     if (saleData) {
-    //         // Kichik kechikish bilan avtomatik pechat qilish
-    //         const timer = setTimeout(() => {
-    //             window.print();
-    //         }, 100); // 1 soniya kechikish
+    useEffect(() => {
+        if (saleData) {
+            // Kichik kechikish bilan avtomatik pechat qilish
+            const timer = setTimeout(() => {
+                window.print();
+            }, 100); // 1 soniya kechikish
 
-    //         return () => clearTimeout(timer);
-    //     }
-    // }, [saleData]);
+            return () => clearTimeout(timer);
+        }
+    }, [saleData]);
 
     if (!saleData) {
         return (

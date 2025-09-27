@@ -160,9 +160,9 @@ const TableProduct: React.FC<TableProductProps> = ({
             changeStatus(); // This will refresh the products list
             handleCancelEditPrice();
             toast.success("Mahsulot narxi muvaffaqiyatli o'zgartirildi!");
-        } catch (error) {
-            console.error("Narxni yangilashda xatolik:", error);
-            toast.error("Narxni yangilashda xatolik yuz berdi");
+        } catch (error: any) {
+            console.error(error.response.data.error);
+            toast.error(error.response.data.error);
         } finally {
             setIsUpdatingPrice(false);
         }
@@ -319,17 +319,36 @@ const TableProduct: React.FC<TableProductProps> = ({
                                         product.product_id ? (
                                             <div className="flex items-center gap-2">
                                                 <input
-                                                    type="number"
-                                                    value={priceInputValue}
-                                                    onChange={(e) =>
+                                                    type="text"
+                                                    value={formatNumber(
+                                                        priceInputValue
+                                                    )}
+                                                    onChange={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            );
                                                         setPriceInputValue(
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                            value
+                                                        );
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            );
+                                                        const numValue =
+                                                            parseFloat(value);
+                                                        if (!isNaN(numValue)) {
+                                                            setPriceInputValue(
+                                                                numValue.toString()
+                                                            );
+                                                        }
+                                                    }}
                                                     className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     placeholder="Narx"
-                                                    min="0"
-                                                    step="0.01"
                                                 />
                                                 <span className="text-sm text-gray-500">
                                                     so'm

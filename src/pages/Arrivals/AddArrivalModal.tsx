@@ -313,9 +313,8 @@ export default function AddArrivalModal({
                             <Input
                                 type="text"
                                 value={formatNumber(dollarRate)}
-                                disabled
                                 placeholder="Dollar kursi yuklanmoqda..."
-                                className="bg-gray-100"
+                                className="bg-gray-100 outline-none"
                             />
                         </div>
                     </div>
@@ -464,23 +463,44 @@ export default function AddArrivalModal({
                                                 })`}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
-                                            {dollarRate > 0 &&
-                                                typeof item.receipt_price ===
-                                                    "number" && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {cashType === 0
+                                            {dollarRate > 0 && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {(() => {
+                                                        const value =
+                                                            item.receipt_price;
+                                                        if (
+                                                            value === "" ||
+                                                            value === "."
+                                                        )
+                                                            return "";
+
+                                                        const numValue =
+                                                            typeof value ===
+                                                            "string"
+                                                                ? parseFloat(
+                                                                      value
+                                                                  )
+                                                                : value;
+                                                        if (
+                                                            isNaN(numValue) ||
+                                                            numValue === 0
+                                                        )
+                                                            return "";
+
+                                                        return cashType === 0
                                                             ? `≈ ${formatNumber(
                                                                   convertToSom(
-                                                                      item.receipt_price
+                                                                      numValue
                                                                   )
                                                               )} UZS`
                                                             : `≈ ${formatNumber(
                                                                   convertToDollar(
-                                                                      item.receipt_price
+                                                                      numValue
                                                                   )
-                                                              )} $`}
-                                                    </p>
-                                                )}
+                                                              )} $`;
+                                                    })()}
+                                                </p>
+                                            )}
                                         </div>
 
                                         <div>

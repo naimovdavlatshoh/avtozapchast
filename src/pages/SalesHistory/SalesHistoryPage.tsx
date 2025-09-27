@@ -85,6 +85,42 @@ const SalesHistoryPage: React.FC = () => {
         navigate(-1);
     };
 
+    // Print check function
+    const handlePrintCheck = (sale: Sale) => {
+        // Sale ma'lumotlarini check formatiga aylantirish
+        const saleData = {
+            cart: sale.items.map((item) => ({
+                product_id: item.product_id,
+                product_name: item.product_name,
+                product_code: item.product_code,
+                selling_price: 0, // Bu ma'lumot API dan kelmaydi
+                last_receipt_price: 0,
+                total_amount: item.amount,
+                quantity: item.amount,
+                total: 0, // Bu ma'lumot API dan kelmaydi
+                image_id: undefined,
+            })),
+            isDebt: sale.is_debt === 1,
+            selectedClient: sale.client_id ? { client_name: "Mijoz" } : null,
+            debtAmount:
+                sale.is_debt === 1
+                    ? sale.total_price_with_discount.toString()
+                    : "0",
+            comments: sale.comments || "",
+            discount: sale.discount.toString(),
+            totalAmount: sale.total_price_with_discount,
+            totalItems: sale.items.length,
+            saleId: sale.sale_id,
+            timestamp: formatDate(sale.created_at),
+        };
+
+        // Check sahifasini yangi oynada ochish
+        const checkUrl = `/check?saleData=${encodeURIComponent(
+            JSON.stringify(saleData)
+        )}`;
+        window.open(checkUrl, "_blank");
+    };
+
     // Delete functions
     const handleDeleteSale = (sale: Sale) => {
         setSelectedSale(sale);
@@ -329,6 +365,31 @@ const SalesHistoryPage: React.FC = () => {
                                                                 />
                                                             </svg>
                                                         </Link>
+                                                        <button
+                                                            onClick={() =>
+                                                                handlePrintCheck(
+                                                                    sale
+                                                                )
+                                                            }
+                                                            className="inline-flex items-center gap-2 px-2 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+                                                            title="Chekni chop etish"
+                                                        >
+                                                            <svg
+                                                                className="w-4 h-4"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={
+                                                                        2
+                                                                    }
+                                                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                                                />
+                                                            </svg>
+                                                        </button>
                                                         <button
                                                             onClick={() =>
                                                                 handleDeleteSale(
