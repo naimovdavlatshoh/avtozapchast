@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import EditProductModal from "./EditProductModal";
 import { GetDataSimpleBlob, UpdateProductPrice } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
+import { formatDate } from "../../utils/dateFormat";
 import { Modal } from "../../components/ui/modal";
 import { MdOutlineImageNotSupported } from "react-icons/md";
 import { toast } from "react-hot-toast";
@@ -166,16 +167,6 @@ const TableProduct: React.FC<TableProductProps> = ({
         } finally {
             setIsUpdatingPrice(false);
         }
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
     };
 
     // Rasm URL larini yuklash

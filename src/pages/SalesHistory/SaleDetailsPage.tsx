@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { GetDataSimple, PostDataTokenJson } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
+import { formatDate } from "../../utils/dateFormat";
 import { MdArrowBack, MdUndo, MdDelete } from "react-icons/md";
 import { toast } from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
@@ -99,16 +100,6 @@ const SaleDetailsPage: React.FC = () => {
 
     const handleBack = () => {
         navigate(-1);
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
     };
 
     const getStatusBadge = (isDebt: number) => {

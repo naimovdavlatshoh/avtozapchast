@@ -6,6 +6,7 @@ import TextArea from "../form/input/TextArea";
 import Label from "../form/Label";
 import Select from "../form/Select";
 import { PostDataTokenJson } from "../../service/data";
+import { formatDate } from "../../utils/dateFormat";
 import toast from "react-hot-toast";
 
 interface PaymentHistory {
@@ -64,16 +65,6 @@ export default function PaymentModal({
     const [selectedCashType, setSelectedCashType] = useState("1");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
-    };
 
     const formatAmount = (amount: string) => {
         return parseInt(amount).toLocaleString();

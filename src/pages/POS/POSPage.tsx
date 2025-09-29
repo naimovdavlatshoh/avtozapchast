@@ -7,6 +7,8 @@ import {
 } from "../../service/data";
 import { toast } from "react-hot-toast";
 import { formatNumber } from "../../utils/numberFormat";
+import { convertUzsToUsd, formatUsd } from "../../utils/currencyConverter";
+import { formatDate } from "../../utils/dateFormat";
 import {
     MdShoppingCart,
     MdAdd,
@@ -439,7 +441,7 @@ const POSPage: React.FC = () => {
                     totalAmount: getTotalAmount(),
                     totalItems: getTotalItems(),
                     saleId: response?.data?.sale_id || Date.now(),
-                    timestamp: new Date().toLocaleString("uz-UZ"),
+                    timestamp: formatDate(new Date().toISOString()),
                 };
 
                 setCart([]);
@@ -643,13 +645,36 @@ const POSPage: React.FC = () => {
                                             <span className="text-lg text-gray-700 font-semibold">
                                                 Oxirgi kirim narxi:
                                             </span>
-                                            <p className="text-xl text-gray-800 font-semibold">
-                                                {product?.last_receipt_price
-                                                    ? `${formatNumber(
-                                                          product.last_receipt_price
-                                                      )} so'm`
-                                                    : "N/A"}
-                                            </p>
+                                            <div className="text-right">
+                                                <p className="text-xl text-gray-800 font-semibold">
+                                                    {product?.last_receipt_price
+                                                        ? `${formatNumber(
+                                                              product.last_receipt_price
+                                                          )} so'm`
+                                                        : "N/A"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-700 font-semibold">
+                                                Oxirgi kirim narxi (USD):
+                                            </span>
+                                            <div className="text-right">
+                                                <p className="text-xl text-gray-800 font-semibold">
+                                                    {product?.last_receipt_price &&
+                                                        product.last_receipt_price >
+                                                            0 && (
+                                                            <p className="text-sm text-green-600">
+                                                                ≈{" "}
+                                                                {formatUsd(
+                                                                    convertUzsToUsd(
+                                                                        product.last_receipt_price
+                                                                    )
+                                                                )}
+                                                            </p>
+                                                        )}
+                                                </p>
+                                            </div>
                                         </div>
 
                                         <div className="flex items-center justify-between">
@@ -776,14 +801,28 @@ const POSPage: React.FC = () => {
 
                                                 {/* Kichik ma'lumotlar */}
                                                 <div className="flex justify-between text-xs text-gray-500">
-                                                    <span>
-                                                        Sotib olingan:{" "}
-                                                        {formatNumber(
-                                                            item.last_receipt_price ||
-                                                                0
-                                                        )}{" "}
-                                                        so'm
-                                                    </span>
+                                                    <div>
+                                                        <span>
+                                                            Sotib olingan:{" "}
+                                                            {formatNumber(
+                                                                item.last_receipt_price ||
+                                                                    0
+                                                            )}{" "}
+                                                            so'm
+                                                        </span>
+                                                        {item.last_receipt_price &&
+                                                            item.last_receipt_price >
+                                                                0 && (
+                                                                <p className="text-xs text-green-600 mt-1">
+                                                                    ≈{" "}
+                                                                    {formatUsd(
+                                                                        convertUzsToUsd(
+                                                                            item.last_receipt_price
+                                                                        )
+                                                                    )}
+                                                                </p>
+                                                            )}
+                                                    </div>
                                                     <span>
                                                         Qolgan:{" "}
                                                         {item.total_amount} dona
@@ -939,30 +978,68 @@ const POSPage: React.FC = () => {
                             </div>
                             <div className="flex justify-between">
                                 <span>Jami summa:</span>
-                                <span className="font-semibold text-blue-600">
-                                    {formatNumber(getTotalAmount())} so'm
-                                </span>
+                                <div className="text-right">
+                                    <span className="font-semibold text-blue-600">
+                                        {formatNumber(getTotalAmount())} so'm
+                                    </span>
+                                    {getTotalAmount() > 0 && (
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            ≈{" "}
+                                            {formatUsd(
+                                                convertUzsToUsd(
+                                                    getTotalAmount()
+                                                )
+                                            )}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                             {discount && parseFloat(discount) > 0 && (
                                 <>
                                     <div className="flex justify-between text-red-600">
                                         <span>Chegirma:</span>
-                                        <span className="font-semibold">
-                                            -
-                                            {formatNumber(parseFloat(discount))}{" "}
-                                            so'm
-                                        </span>
+                                        <div className="text-right">
+                                            <span className="font-semibold">
+                                                -
+                                                {formatNumber(
+                                                    parseFloat(discount)
+                                                )}{" "}
+                                                so'm
+                                            </span>
+                                            {parseFloat(discount) > 0 && (
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    ≈ -
+                                                    {formatUsd(
+                                                        convertUzsToUsd(
+                                                            parseFloat(discount)
+                                                        )
+                                                    )}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex justify-between text-green-600 border-t pt-2">
                                         <span className="font-bold">
                                             To'lanadigan summa:
                                         </span>
-                                        <span className="font-bold text-lg">
-                                            {formatNumber(
-                                                getTotalWithDiscount()
-                                            )}{" "}
-                                            so'm
-                                        </span>
+                                        <div className="text-right">
+                                            <span className="font-bold text-lg">
+                                                {formatNumber(
+                                                    getTotalWithDiscount()
+                                                )}{" "}
+                                                so'm
+                                            </span>
+                                            {getTotalWithDiscount() > 0 && (
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    ≈{" "}
+                                                    {formatUsd(
+                                                        convertUzsToUsd(
+                                                            getTotalWithDiscount()
+                                                        )
+                                                    )}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </>
                             )}

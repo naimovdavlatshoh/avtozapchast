@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { GetDataSimple, PostDataTokenJson } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
+import { formatDate } from "../../utils/dateFormat";
 import { useParams, useNavigate } from "react-router";
 import { MdArrowBack, MdPayment, MdDelete } from "react-icons/md";
 import { toast } from "react-hot-toast";
@@ -191,16 +192,6 @@ const DebtorDetailsPage: React.FC = () => {
         } finally {
             setIsDeleting(false);
         }
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
     };
 
     if (loading) {

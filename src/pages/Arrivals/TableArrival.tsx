@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Modal } from "../../components/ui/modal";
 // import { EyeIcon } from "../../icons";
 import { formatNumber } from "../../utils/numberFormat";
+import { formatDate } from "../../utils/dateFormat";
 import { IoEyeSharp } from "react-icons/io5";
 
 interface ArrivalItem {
@@ -36,16 +37,6 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
         null
     );
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
-    };
 
     // const getTotalAmount = (items: ArrivalItem[]) => {
     //     return items.reduce((total, item) => total + item.amount, 0);
@@ -113,7 +104,8 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                         {getTotalAmount(arrival.items)}
                                     </td> */}
                                     <td className="px-6 py-4">
-                                        {formatNumber(arrival.total_price)} {arrival.cash_type_text}
+                                        {formatNumber(arrival.total_price)}{" "}
+                                        {arrival.cash_type_text}
                                     </td>
                                     <td className="px-6 py-4">
                                         <button
@@ -258,14 +250,18 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                                         {formatNumber(
                                                             item.receipt_price
                                                         )}{" "}
-                                                       {selectedArrival.cash_type_text}
+                                                        {
+                                                            selectedArrival.cash_type_text
+                                                        }
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-900 font-medium">
                                                         {formatNumber(
                                                             item.amount *
                                                                 item.receipt_price
                                                         )}{" "}
-                                                        {selectedArrival.cash_type_text}
+                                                        {
+                                                            selectedArrival.cash_type_text
+                                                        }
                                                     </td>
                                                 </tr>
                                             )
