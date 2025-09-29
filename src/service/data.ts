@@ -2,6 +2,23 @@ import axios from "axios";
 import { handleAuthError } from "../utils/authUtils";
 export const BASE_URL = "https://apistore.afandicloud.uz/";
 
+// Block requests to avtozapchast.netlify.app
+axios.interceptors.request.use(
+    (config) => {
+        if (config.url?.includes("avtozapchast.netlify.app")) {
+            console.warn(
+                "Blocked request to avtozapchast.netlify.app:",
+                config.url
+            );
+            return Promise.reject(
+                new Error("Request blocked: avtozapchast.netlify.app")
+            );
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
