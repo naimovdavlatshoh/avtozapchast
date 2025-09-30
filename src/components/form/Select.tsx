@@ -14,6 +14,7 @@ interface SelectProps {
     searchable?: boolean;
     onSearch?: (keyword: string) => void;
     searching?: boolean;
+    externalSearchTerm?: string;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -25,6 +26,7 @@ const Select: React.FC<SelectProps> = ({
     searchable = false,
     onSearch,
     searching = false,
+    externalSearchTerm,
 }) => {
     // Manage the selected value and dropdown state
     const [selectedValue, setSelectedValue] = useState<string>(defaultValue);
@@ -41,10 +43,18 @@ const Select: React.FC<SelectProps> = ({
     });
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Update filtered options when options change
+    // Update filtered options when options or search term change
     useEffect(() => {
         if (!options || options.length === 0) {
             setFilteredOptions([]);
+            return;
+        }
+
+        // If external search (server-side) is provided, do not locally filter.
+        // Show options exactly as provided by parent so server results are visible
+        // even when labels do not contain the raw query (e.g., barcode).
+        if (onSearch) {
+            setFilteredOptions(options);
             return;
         }
 
@@ -56,7 +66,14 @@ const Select: React.FC<SelectProps> = ({
             );
             setFilteredOptions(filtered);
         }
-    }, [options, searchTerm]);
+    }, [options, searchTerm, onSearch]);
+
+    // Handle external search term (for barcode scanner)
+    useEffect(() => {
+        if (externalSearchTerm !== undefined) {
+            setSearchTerm(externalSearchTerm);
+        }
+    }, [externalSearchTerm]);
 
     // Close dropdown when clicking outside and update position on scroll
     useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Modal } from "../../components/ui/modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -15,14 +15,14 @@ import { formatNumber } from "../../utils/numberFormat";
 interface Product {
     product_id: number;
     product_name: string;
-    barcode?: string;
+    barcode?: string | number;
 }
 
 interface ArrivalItem {
     product_id: number;
     amount: number;
     receipt_price: number | string;
-    selling_price: number;
+    selling_price: number | string;
 }
 
 interface AddArrivalModalProps {
@@ -38,9 +38,8 @@ export default function AddArrivalModal({
     changeStatus,
     setResponse,
 }: AddArrivalModalProps) {
-    const [arrivalNumber, setArrivalNumber] = useState("");
-    const [comments, setComments] = useState("");
-    const [cashType, setCashType] = useState<0 | 1>(0); // 0 - dollar, 1 - so'm
+    // Removed these from UI; we'll always send cash_type=0
+    const cashType: 0 = 0;
     const [dollarRate, setDollarRate] = useState<number>(0);
     const [items, setItems] = useState<ArrivalItem[]>([
         { product_id: 0, amount: 0, receipt_price: 0, selling_price: 0 },
@@ -48,16 +47,23 @@ export default function AddArrivalModal({
     const [searchingProducts, setSearchingProducts] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    // Barcode scan buffer
+    const [barcodeBuffer, setBarcodeBuffer] = useState("");
+    let barcodeTimeout: number | undefined;
 
-    // Kamida bitta to'liq mahsulot tanlanganligini tekshirish
-    const hasValidItems = items.some(
-        (item) =>
-            item.product_id > 0 &&
-            item.amount > 0 &&
-            typeof item.receipt_price === "number" &&
-            item.receipt_price > 0 &&
-            item.selling_price > 0
-    );
+    const hasValidItems = items.some((item) => {
+        const receipt =
+            typeof item.receipt_price === "number"
+                ? item.receipt_price
+                : parseFloat(item.receipt_price || "0");
+        const selling =
+            typeof item.selling_price === "number"
+                ? item.selling_price
+                : parseFloat(item.selling_price || "0");
+        return (
+            item.product_id > 0 && item.amount > 0 && receipt > 0 && selling > 0
+        );
+    });
 
     useEffect(() => {
         if (isOpen) {
@@ -88,18 +94,93 @@ export default function AddArrivalModal({
         }
     };
 
+    // Handle fast barcode scan from hardware scanner (global keydown)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            const active = document.activeElement as HTMLElement | null;
+            const isTyping = !!(
+                active &&
+                (active.tagName === "INPUT" ||
+                    active.tagName === "TEXTAREA" ||
+                    active.getAttribute("contenteditable") === "true")
+            );
+
+            // Do not intercept while user is typing in inputs
+            if (isTyping) return;
+
+            // Build buffer for printable keys
+            if (e.key.length === 1) {
+                setBarcodeBuffer((prev) => (prev || "") + e.key);
+                window.clearTimeout(barcodeTimeout);
+                barcodeTimeout = window.setTimeout(() => {
+                    setBarcodeBuffer("");
+                }, 120);
+                return;
+            }
+
+            // On Enter, treat buffer as scanned barcode
+            if (e.key === "Enter" && barcodeBuffer.trim()) {
+                const code = barcodeBuffer.trim();
+                setBarcodeBuffer("");
+                // direct search and attempt to auto-assign
+                (async () => {
+                    try {
+                        const res = await PostSimple(
+                            `api/products/search?keyword=${encodeURIComponent(
+                                code
+                            )}`
+                        );
+                        const list: Product[] =
+                            res?.data?.result || res?.data || [];
+                        setProducts(Array.isArray(list) ? list : []);
+                        if (Array.isArray(list) && list.length === 1) {
+                            // put into first empty row or the last row
+                            const targetIndex = Math.max(
+                                0,
+                                items.findIndex((it) => it.product_id === 0)
+                            );
+                            updateItem(
+                                targetIndex === -1
+                                    ? items.length - 1
+                                    : targetIndex,
+                                "product_id",
+                                list[0].product_id
+                            );
+                        }
+                    } catch (err) {
+                        // ignore
+                    }
+                })();
+            }
+        };
+
+        document.addEventListener("keydown", onKeyDown);
+        return () => {
+            document.removeEventListener("keydown", onKeyDown);
+            window.clearTimeout(barcodeTimeout);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, items]);
+
     const searchProducts = async (keyword: string) => {
-        if (!keyword.trim()) {
+        const q = keyword.trim();
+        if (!q) {
             fetchProducts();
             return;
         }
 
         setSearchingProducts(true);
         try {
-            const res = await PostSimple(
-                `api/products/search?keyword=${encodeURIComponent(keyword)}`
-            );
-            setProducts(res?.data?.result || []);
+            // Backend barcha search uchun keyword parametrini ishlatadi
+            const endpoint = `api/products/search?keyword=${encodeURIComponent(
+                q
+            )}`;
+
+            const res = await PostSimple(endpoint);
+            const result = res?.data?.result || res?.data || [];
+            setProducts(Array.isArray(result) ? result : []);
         } catch (error) {
             console.error("Mahsulotlarni qidirishda xatolik:", error);
             toast.error("Mahsulotlarni qidirishda xatolik");
@@ -168,48 +249,50 @@ export default function AddArrivalModal({
         return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
     };
 
-    // Valyuta o'zgarganida faqat kirim narxini qayta hisoblash
-    const handleCashTypeChange = (newCashType: 0 | 1) => {
-        setCashType(newCashType);
-
-        if (dollarRate > 0) {
-            const newItems = items.map((item) => {
-                if (
-                    typeof item.receipt_price === "number" &&
-                    item.receipt_price > 0
-                ) {
-                    if (newCashType === 0) {
-                        // Dollar tanlandi - kirim narxini dollarga aylantirish
-                        return {
-                            ...item,
-                            receipt_price: convertToDollar(item.receipt_price),
-                        };
-                    } else {
-                        // So'm tanlandi - kirim narxini so'mga aylantirish
-                        return {
-                            ...item,
-                            receipt_price: convertToSom(item.receipt_price),
-                        };
-                    }
-                }
-                return item;
-            });
-            setItems(newItems);
-        }
+    // Helpers for totals
+    const getReceiptPriceNumber = (value: number | string): number => {
+        if (typeof value === "number") return value;
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
     };
+
+    const getItemTotalSom = (item: ArrivalItem): number => {
+        const usd = getReceiptPriceNumber(item.receipt_price);
+        if (item.amount <= 0 || usd <= 0 || dollarRate <= 0) return 0;
+        return convertToSom(item.amount * usd);
+    };
+
+    const grandTotalSom = useMemo(() => {
+        return items.reduce((sum, it) => sum + getItemTotalSom(it), 0);
+    }, [items, dollarRate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Validation
-        const validItems = items.filter(
-            (item) =>
-                item.product_id > 0 &&
-                item.amount > 0 &&
-                typeof item.receipt_price === "number" &&
-                item.receipt_price > 0 &&
-                item.selling_price > 0
-        );
+        const validItems = items
+            .map((item) => {
+                const receipt =
+                    typeof item.receipt_price === "number"
+                        ? item.receipt_price
+                        : parseFloat(item.receipt_price || "0");
+                const selling =
+                    typeof item.selling_price === "number"
+                        ? item.selling_price
+                        : parseFloat(item.selling_price || "0");
+                return {
+                    ...item,
+                    receipt_price: receipt,
+                    selling_price: selling,
+                } as ArrivalItem;
+            })
+            .filter(
+                (item) =>
+                    item.product_id > 0 &&
+                    item.amount > 0 &&
+                    (item.receipt_price as number) > 0 &&
+                    (item.selling_price as number) > 0
+            );
 
         if (validItems.length === 0) {
             toast.error("Kamida bitta to'liq mahsulot qo'shing!");
@@ -219,9 +302,7 @@ export default function AddArrivalModal({
         setIsLoading(true);
         try {
             const data = {
-                arrival_number: arrivalNumber || undefined,
-                comments: comments || undefined,
-                cash_type: cashType,
+                cash_type: 0 as const,
                 items: validItems,
             };
 
@@ -244,9 +325,6 @@ export default function AddArrivalModal({
     };
 
     const resetForm = () => {
-        setArrivalNumber("");
-        setComments("");
-        setCashType(0);
         setItems([
             { product_id: 0, amount: 0, receipt_price: 0, selling_price: 0 },
         ]);
@@ -268,55 +346,16 @@ export default function AddArrivalModal({
                     Yangi kirim qo'shish
                 </h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Removed arrival number and comments */}
+
                     <div>
-                        <Label htmlFor="arrivalNumber">Kirim raqami</Label>
+                        <Label>Dollar kursi</Label>
                         <Input
-                            id="arrivalNumber"
                             type="text"
-                            value={arrivalNumber}
-                            onChange={(e) => setArrivalNumber(e.target.value)}
-                            placeholder="INV-123456"
+                            value={formatNumber(dollarRate)}
+                            placeholder="Dollar kursi yuklanmoqda..."
+                            className="bg-gray-100 outline-none"
                         />
-                    </div>
-
-                    <div>
-                        <Label htmlFor="comments">Izoh</Label>
-                        <textarea
-                            id="comments"
-                            value={comments}
-                            onChange={(e) => setComments(e.target.value)}
-                            placeholder="Izoh..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            rows={3}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="cashType">Valyuta</Label>
-                            <Select
-                                defaultValue={cashType.toString()}
-                                onChange={(value: string) =>
-                                    handleCashTypeChange(
-                                        parseInt(value) as 0 | 1
-                                    )
-                                }
-                                options={[
-                                    { value: 0, label: "Dollar ($)" },
-                                    { value: 1, label: "So'm (UZS)" },
-                                ]}
-                                placeholder="Valyutani tanlang"
-                            />
-                        </div>
-                        <div>
-                            <Label>Dollar kursi</Label>
-                            <Input
-                                type="text"
-                                value={formatNumber(dollarRate)}
-                                placeholder="Dollar kursi yuklanmoqda..."
-                                className="bg-gray-100 outline-none"
-                            />
-                        </div>
                     </div>
 
                     <div>
@@ -331,14 +370,14 @@ export default function AddArrivalModal({
                             </Button>
                         </div>
 
-                        <div className="space-y-2 min-h-52 max-h-80 overflow-y-auto pr-2">
+                        <div className="space-y-3 min-h-52 max-h-80 overflow-y-auto pr-2">
                             {items.map((item, index) => (
                                 <div
                                     key={index}
                                     className="border border-gray-200 rounded-lg p-3 bg-gray-50"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                                        <div className="col-span-2">
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="col-span-1">
                                             <Label className="text-xs">
                                                 Mahsulot
                                             </Label>
@@ -356,185 +395,265 @@ export default function AddArrivalModal({
                                                 options={products.map(
                                                     (product) => ({
                                                         value: product.product_id,
-                                                        label: `${product.product_name}`,
+                                                        label: `${
+                                                            product.product_name
+                                                        }${
+                                                            product.barcode
+                                                                ? ` — ${String(
+                                                                      product.barcode
+                                                                  )}`
+                                                                : ""
+                                                        }`,
                                                     })
                                                 )}
                                                 placeholder="Tanlang"
                                                 searchable={true}
                                                 onSearch={searchProducts}
                                                 searching={searchingProducts}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label className="text-xs">
-                                                Miqdor
-                                            </Label>
-                                            <Input
-                                                type="text"
-                                                value={
-                                                    item.amount
-                                                        ? formatNumber(
-                                                              item.amount
-                                                          )
-                                                        : ""
+                                                externalSearchTerm={
+                                                    barcodeBuffer
                                                 }
-                                                onChange={(e) => {
-                                                    const value =
-                                                        e.target.value.replace(
-                                                            /\s/g,
-                                                            ""
-                                                        );
-                                                    updateItem(
-                                                        index,
-                                                        "amount",
-                                                        parseInt(value) || 0
-                                                    );
-                                                }}
-                                                placeholder="Miqdor"
                                             />
                                         </div>
 
-                                        <div>
-                                            <Label className="text-xs">
-                                                Kirim narxi (
-                                                {cashType === 0 ? "$" : "UZS"})
-                                            </Label>
-                                            <input
-                                                type="text"
-                                                value={formatNumberWithSpaces(
-                                                    item.receipt_price || ""
-                                                )}
-                                                onChange={(e) => {
-                                                    const value =
-                                                        e.target.value.replace(
-                                                            /\s/g,
-                                                            ""
-                                                        ); // Remove spaces for processing
-
-                                                    // Allow empty string, numbers, and decimal points
-                                                    if (
-                                                        value === "" ||
-                                                        value === "." ||
-                                                        /^\d*\.?\d*$/.test(
-                                                            value
-                                                        )
-                                                    ) {
-                                                        // Update the input display - faqat string sifatida saqlash
-                                                        updateItem(
-                                                            index,
-                                                            "receipt_price",
-                                                            value
-                                                        );
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div>
+                                                <Label className="text-xs">
+                                                    Miqdor
+                                                </Label>
+                                                <Input
+                                                    type="text"
+                                                    value={
+                                                        item.amount
+                                                            ? formatNumber(
+                                                                  item.amount
+                                                              )
+                                                            : ""
                                                     }
-                                                }}
-                                                onBlur={(e) => {
-                                                    // Input'dan chiqganda raqamga aylantirish
-                                                    const value =
-                                                        e.target.value.replace(
-                                                            /\s/g,
-                                                            ""
-                                                        );
-                                                    if (
-                                                        value === "" ||
-                                                        value === "."
-                                                    ) {
+                                                    onChange={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            );
                                                         updateItem(
                                                             index,
-                                                            "receipt_price",
-                                                            0
+                                                            "amount",
+                                                            parseInt(value) || 0
                                                         );
-                                                    } else {
-                                                        const parsedValue =
-                                                            parseFloat(value);
+                                                    }}
+                                                    placeholder="Miqdor"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-xs">
+                                                    Kirim narxi (
+                                                    {cashType === 0
+                                                        ? "$"
+                                                        : "UZS"}
+                                                    )
+                                                </Label>
+                                                <input
+                                                    type="text"
+                                                    value={formatNumberWithSpaces(
+                                                        item.receipt_price || ""
+                                                    )}
+                                                    onChange={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            ); // Remove spaces for processing
+
+                                                        // Allow empty string, numbers, and decimal points
                                                         if (
-                                                            !isNaN(parsedValue)
+                                                            value === "" ||
+                                                            value === "." ||
+                                                            /^\d*\.?\d*$/.test(
+                                                                value
+                                                            )
+                                                        ) {
+                                                            // Update the input display - faqat string sifatida saqlash
+                                                            updateItem(
+                                                                index,
+                                                                "receipt_price",
+                                                                value
+                                                            );
+                                                        }
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        // Input'dan chiqganda raqamga aylantirish
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            );
+                                                        if (
+                                                            value === "" ||
+                                                            value === "."
                                                         ) {
                                                             updateItem(
                                                                 index,
                                                                 "receipt_price",
-                                                                parsedValue
+                                                                0
+                                                            );
+                                                        } else {
+                                                            const parsedValue =
+                                                                parseFloat(
+                                                                    value
+                                                                );
+                                                            if (
+                                                                !isNaN(
+                                                                    parsedValue
+                                                                )
+                                                            ) {
+                                                                updateItem(
+                                                                    index,
+                                                                    "receipt_price",
+                                                                    parsedValue
+                                                                );
+                                                            }
+                                                        }
+                                                    }}
+                                                    placeholder={`Kirim narxi (${
+                                                        cashType === 0
+                                                            ? "$"
+                                                            : "UZS"
+                                                    })`}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                {dollarRate > 0 && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {(() => {
+                                                            const value =
+                                                                item.receipt_price;
+                                                            if (
+                                                                value === "" ||
+                                                                value === "."
+                                                            )
+                                                                return "";
+
+                                                            const numValue =
+                                                                typeof value ===
+                                                                "string"
+                                                                    ? parseFloat(
+                                                                          value
+                                                                      )
+                                                                    : value;
+                                                            if (
+                                                                isNaN(
+                                                                    numValue
+                                                                ) ||
+                                                                numValue === 0
+                                                            )
+                                                                return "";
+
+                                                            return cashType ===
+                                                                0
+                                                                ? `≈ ${formatNumber(
+                                                                      convertToSom(
+                                                                          numValue
+                                                                      )
+                                                                  )} UZS`
+                                                                : `≈ ${formatNumber(
+                                                                      convertToDollar(
+                                                                          numValue
+                                                                      )
+                                                                  )} $`;
+                                                        })()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <Label className="text-xs">
+                                                    Sotish narxi ($)
+                                                </Label>
+                                                <input
+                                                    type="text"
+                                                    value={formatNumberWithSpaces(
+                                                        item.selling_price || ""
+                                                    )}
+                                                    onChange={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            );
+                                                        if (
+                                                            value === "" ||
+                                                            value === "." ||
+                                                            /^\d*\.?\d*$/.test(
+                                                                value
+                                                            )
+                                                        ) {
+                                                            updateItem(
+                                                                index,
+                                                                "selling_price",
+                                                                value
                                                             );
                                                         }
-                                                    }
-                                                }}
-                                                placeholder={`Kirim narxi (${
-                                                    cashType === 0 ? "$" : "UZS"
-                                                })`}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            />
-                                            {dollarRate > 0 && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {(() => {
+                                                    }}
+                                                    onBlur={(e) => {
                                                         const value =
-                                                            item.receipt_price;
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            );
                                                         if (
                                                             value === "" ||
                                                             value === "."
-                                                        )
-                                                            return "";
-
-                                                        const numValue =
-                                                            typeof value ===
-                                                            "string"
-                                                                ? parseFloat(
-                                                                      value
-                                                                  )
-                                                                : value;
-                                                        if (
-                                                            isNaN(numValue) ||
-                                                            numValue === 0
-                                                        )
-                                                            return "";
-
-                                                        return cashType === 0
-                                                            ? `≈ ${formatNumber(
-                                                                  convertToSom(
-                                                                      numValue
-                                                                  )
-                                                              )} UZS`
-                                                            : `≈ ${formatNumber(
-                                                                  convertToDollar(
-                                                                      numValue
-                                                                  )
-                                                              )} $`;
-                                                    })()}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <Label className="text-xs">
-                                                Sotish narxi (UZS)
-                                            </Label>
-                                            <Input
-                                                type="text"
-                                                value={
-                                                    item.selling_price
-                                                        ? formatNumber(
-                                                              item.selling_price
-                                                          )
-                                                        : ""
-                                                }
-                                                onChange={(e) => {
-                                                    const value =
-                                                        e.target.value.replace(
-                                                            /\s/g,
-                                                            ""
-                                                        );
-                                                    updateItem(
-                                                        index,
-                                                        "selling_price",
-                                                        parseFloat(value) || 0
-                                                    );
-                                                }}
-                                                placeholder="Sotish narxi (UZS)"
-                                            />
+                                                        ) {
+                                                            updateItem(
+                                                                index,
+                                                                "selling_price",
+                                                                0
+                                                            );
+                                                        } else {
+                                                            const parsed =
+                                                                parseFloat(
+                                                                    value
+                                                                );
+                                                            if (!isNaN(parsed))
+                                                                updateItem(
+                                                                    index,
+                                                                    "selling_price",
+                                                                    parsed
+                                                                );
+                                                        }
+                                                    }}
+                                                    placeholder="Sotish narxi ($)"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                {dollarRate > 0 && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        ≈{" "}
+                                                        {formatNumber(
+                                                            convertToSom(
+                                                                typeof item.selling_price ===
+                                                                    "number"
+                                                                    ? item.selling_price
+                                                                    : parseFloat(
+                                                                          item.selling_price ||
+                                                                              "0"
+                                                                      ) || 0
+                                                            )
+                                                        )}{" "}
+                                                        UZS
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Tugma */}
-                                    <div className="flex justify-end mt-2">
+                                    {/* Per item total & remove */}
+                                    <div className="flex items-center justify-between mt-2">
+                                        <div className="text-sm text-gray-600">
+                                            Jami:{" "}
+                                            {formatNumber(
+                                                getItemTotalSom(item)
+                                            )}{" "}
+                                            UZS
+                                        </div>
                                         {items.length > 1 && (
                                             <Button
                                                 type="button"
@@ -549,6 +668,13 @@ export default function AddArrivalModal({
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Grand total */}
+                    <div className="flex justify-end">
+                        <div className="text-base font-semibold text-gray-800">
+                            Umumiy: {formatNumber(grandTotalSom)} UZS
                         </div>
                     </div>
 

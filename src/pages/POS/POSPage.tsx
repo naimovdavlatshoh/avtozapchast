@@ -32,6 +32,8 @@ interface Product {
     description?: string;
     image_id?: number;
     created_at: string;
+    cash_type_text?: string;
+    cash_type?: number;
 }
 
 interface CartItem {
@@ -44,6 +46,8 @@ interface CartItem {
     quantity: number;
     total: number;
     image_id?: number;
+    cash_type_text?: string;
+    cash_type?: number;
 }
 
 interface Client {
@@ -282,6 +286,8 @@ const POSPage: React.FC = () => {
                         quantity: 1,
                         total: product.selling_price,
                         image_id: product.image_id,
+                        cash_type_text: product.cash_type_text,
+                        cash_type: product.cash_type,
                     },
                 ];
             }
@@ -650,32 +656,37 @@ const POSPage: React.FC = () => {
                                                     {product?.last_receipt_price
                                                         ? `${formatNumber(
                                                               product.last_receipt_price
-                                                          )} so'm`
+                                                          )} ${
+                                                              product?.cash_type_text ||
+                                                              "so'm"
+                                                          }`
                                                         : "N/A"}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-700 font-semibold">
-                                                Oxirgi kirim narxi (USD):
-                                            </span>
-                                            <div className="text-right">
-                                                <p className="text-xl text-gray-800 font-semibold">
-                                                    {product?.last_receipt_price &&
-                                                        product.last_receipt_price >
-                                                            0 && (
-                                                            <p className="text-sm text-green-600">
-                                                                ≈{" "}
-                                                                {formatUsd(
-                                                                    convertUzsToUsd(
-                                                                        product.last_receipt_price
-                                                                    )
-                                                                )}
-                                                            </p>
-                                                        )}
-                                                </p>
+                                        {product?.cash_type === 1 && (
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-700 font-semibold">
+                                                    Oxirgi kirim narxi (USD):
+                                                </span>
+                                                <div className="text-right">
+                                                    <p className="text-xl text-gray-800 font-semibold">
+                                                        {product?.last_receipt_price &&
+                                                            product.last_receipt_price >
+                                                                0 && (
+                                                                <p className="text-sm text-green-600">
+                                                                    ≈{" "}
+                                                                    {formatUsd(
+                                                                        convertUzsToUsd(
+                                                                            product.last_receipt_price
+                                                                        )
+                                                                    )}
+                                                                </p>
+                                                            )}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         <div className="flex items-center justify-between">
                                             <span className="text-lg text-gray-700 font-semibold">
@@ -808,9 +819,11 @@ const POSPage: React.FC = () => {
                                                                 item.last_receipt_price ||
                                                                     0
                                                             )}{" "}
-                                                            so'm
+                                                            {item.cash_type_text ||
+                                                                "so'm"}
                                                         </span>
-                                                        {item.last_receipt_price &&
+                                                        {item.cash_type === 1 &&
+                                                            item.last_receipt_price &&
                                                             item.last_receipt_price >
                                                                 0 && (
                                                                 <p className="text-xs text-green-600 mt-1">

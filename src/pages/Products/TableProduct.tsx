@@ -19,6 +19,8 @@ interface Product {
     image_id?: number;
     created_at?: string;
     updated_at?: string;
+    receipt_price_uzs: string;
+    selling_price_uzs: string;
 }
 
 interface TableProductProps {
@@ -35,6 +37,9 @@ const TableProduct: React.FC<TableProductProps> = ({
         null
     );
     const [imageUrls, setImageUrls] = useState<{ [key: number]: string }>({});
+    const [imageLoadingStates, setImageLoadingStates] = useState<{
+        [key: number]: boolean;
+    }>({});
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [selectedImageUrl, setSelectedImageUrl] = useState<string>("");
     const [editingProductId, setEditingProductId] = useState<number | null>(
@@ -169,13 +174,20 @@ const TableProduct: React.FC<TableProductProps> = ({
         }
     };
 
-    // Rasm URL larini yuklash
     useEffect(() => {
         const loadImages = async () => {
             const newImageUrls: { [key: number]: string } = {};
+            const loadingStates: { [key: number]: boolean } = {};
 
             for (const product of products) {
                 if (product.image_id && !imageUrls[product.image_id]) {
+                    // Set loading state for this image
+                    loadingStates[product.image_id] = true;
+                    setImageLoadingStates((prev) => ({
+                        ...prev,
+                        [product.image_id!]: true,
+                    }));
+
                     try {
                         const response = await GetDataSimpleBlob(
                             `api/products/image/${product.image_id}`
@@ -187,6 +199,13 @@ const TableProduct: React.FC<TableProductProps> = ({
                             `Rasm yuklashda xatolik (ID: ${product.image_id}):`,
                             error
                         );
+                    } finally {
+                        // Remove loading state when done
+                        setImageLoadingStates((prev) => {
+                            const newState = { ...prev };
+                            delete newState[product.image_id!];
+                            return newState;
+                        });
                     }
                 }
             }
@@ -262,30 +281,64 @@ const TableProduct: React.FC<TableProductProps> = ({
                                     </td>
                                     <td className="px-6 py-4">
                                         {product.image_id ? (
-                                            <img
-                                                src={
-                                                    getImageUrl(
+                                            <div className="relative w-10 h-10">
+                                                {/* Loading state */}
+                                                {imageLoadingStates[
+                                                    product.image_id
+                                                ] && (
+                                                    <div className="absolute inset-0 w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                                    </div>
+                                                )}
+
+                                                {/* Image */}
+                                                {getImageUrl(
+                                                    product.image_id
+                                                ) &&
+                                                    !imageLoadingStates[
                                                         product.image_id
-                                                    ) || ""
-                                                }
-                                                alt={product.product_name || ""}
-                                                className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                                                onClick={() => {
-                                                    const imageUrl =
-                                                        getImageUrl(
-                                                            product.image_id
-                                                        );
-                                                    if (imageUrl) {
-                                                        handleImageClick(
-                                                            imageUrl
-                                                        );
-                                                    }
-                                                }}
-                                                onError={(e) => {
-                                                    e.currentTarget.style.display =
-                                                        "none";
-                                                }}
-                                            />
+                                                    ] && (
+                                                        <img
+                                                            src={
+                                                                getImageUrl(
+                                                                    product.image_id
+                                                                ) || ""
+                                                            }
+                                                            alt={
+                                                                product.product_name ||
+                                                                ""
+                                                            }
+                                                            className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                                            onClick={() => {
+                                                                const imageUrl =
+                                                                    getImageUrl(
+                                                                        product.image_id
+                                                                    );
+                                                                if (imageUrl) {
+                                                                    handleImageClick(
+                                                                        imageUrl
+                                                                    );
+                                                                }
+                                                            }}
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display =
+                                                                    "none";
+                                                            }}
+                                                        />
+                                                    )}
+
+                                                {/* Fallback when no image or loading failed */}
+                                                {!getImageUrl(
+                                                    product.image_id
+                                                ) &&
+                                                    !imageLoadingStates[
+                                                        product.image_id
+                                                    ] && (
+                                                        <div className="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                                            <MdOutlineImageNotSupported className="w-5 h-5 text-gray-400" />
+                                                        </div>
+                                                    )}
+                                            </div>
                                         ) : (
                                             <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
                                                 <span className="text-gray-400 text-xs">
@@ -412,7 +465,7 @@ const TableProduct: React.FC<TableProductProps> = ({
                                             <div className="flex items-center gap-2">
                                                 <span>
                                                     {formatNumber(
-                                                        product.selling_price
+                                                        product.selling_price_uzs
                                                     )}{" "}
                                                     so'm
                                                 </span>
