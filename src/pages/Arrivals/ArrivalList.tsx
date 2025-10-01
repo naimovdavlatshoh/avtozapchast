@@ -31,7 +31,7 @@ export default function ArrivalList() {
         setTableLoading(true);
         try {
             const res = await GetDataSimple(
-                `api/arrival/list?page=${page}&limit=10`
+                `api/arrival/list?page=${page}&limit=30`
             );
             setArrivals(res?.result || []);
             setTotalPages(res?.pages || 1);

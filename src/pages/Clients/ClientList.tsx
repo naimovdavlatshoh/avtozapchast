@@ -22,7 +22,7 @@ export default function ClientList() {
 
     useEffect(() => {
         setLoading(true);
-        GetDataSimple(`api/clients/list?page=${page}&limit=10`).then((res) => {
+        GetDataSimple(`api/clients/list?page=${page}&limit=30`).then((res) => {
             setClients(res?.result || []);
             setTotalPages(res?.pages || 1);
             setLoading(false);

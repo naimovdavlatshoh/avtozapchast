@@ -46,7 +46,7 @@ const DebtorsPage: React.FC = () => {
         try {
             setLoading(true);
             const response = await GetDataSimple(
-                `api/debtors/list?page=${pageNum}&limit=10`
+                `api/debtors/list?page=${pageNum}&limit=30`
             );
             if (response?.result) {
                 setDebtorsData(response.result);

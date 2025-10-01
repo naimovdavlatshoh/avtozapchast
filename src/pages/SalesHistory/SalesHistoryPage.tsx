@@ -66,7 +66,7 @@ const SalesHistoryPage: React.FC = () => {
         try {
             setLoading(true);
             const response = await GetDataSimple(
-                `api/sale/list?page=${page}&limit=10`
+                `api/sale/list?page=${page}&limit=30`
             );
             if (response?.result) {
                 setSalesData(response);

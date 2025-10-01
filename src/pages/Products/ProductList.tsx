@@ -90,7 +90,7 @@ export default function ProductList() {
         setTableLoading(true);
         try {
             const res = await GetDataSimple(
-                `api/products/list?page=${page}&limit=10`
+                `api/products/list?page=${page}&limit=30`
             );
             setProducts(res?.result || []);
             setTotalPages(res?.pages || 1);

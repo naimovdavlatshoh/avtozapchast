@@ -46,12 +46,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     const [productName, setProductName] = useState("");
     const [productCode, setProductCode] = useState("");
     const [description, setDescription] = useState("");
-    const [amount, setAmount] = useState<number>(0);
-    const [receiptPrice, setReceiptPrice] = useState<number>(0);
-    const [sellingPrice, setSellingPrice] = useState<number>(0);
-    const [amountDisplay, setAmountDisplay] = useState<string>("");
-    const [receiptPriceDisplay, setReceiptPriceDisplay] = useState<string>("");
-    const [sellingPriceDisplay, setSellingPriceDisplay] = useState<string>("");
     const [usdRate, setUsdRate] = useState<number>(0);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [currentImageId, setCurrentImageId] = useState<number | null>(null);
@@ -63,23 +57,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         message: string;
     }>({ type: null, message: "" });
     const [isUploadingImage, setIsUploadingImage] = useState(false);
-
-    // Helper functions for number formatting
-    const formatNumberWithSpaces = (num: number): string => {
-        if (num === 0) return "";
-        return num
-            .toLocaleString("en-US", {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2,
-            })
-            .replace(/,/g, " ");
-    };
-
-    const parseFormattedNumber = (str: string): number => {
-        // Remove spaces and convert to number
-        const cleaned = str.replace(/\s/g, "");
-        return parseFloat(cleaned) || 0;
-    };
 
     // Fetch USD exchange rate from your API
     const fetchUSDRate = async () => {
@@ -95,38 +72,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         }
     };
 
-    // Calculate SUM equivalent from USD amount
-    const calculateSUMEquivalent = (usdAmount: number): string => {
-        if (usdRate === 0 || usdAmount === 0) return "0";
-        const sumAmount = usdAmount * usdRate;
-        return formatNumberWithSpaces(sumAmount);
-    };
-
     // Fetch USD rate when modal opens
     useEffect(() => {
         if (isOpen && usdRate === 0) {
             fetchUSDRate();
         }
     }, [isOpen]);
-
-    // Format display values when component mounts or values change
-    useEffect(() => {
-        if (amount > 0) {
-            setAmountDisplay(formatNumberWithSpaces(amount));
-        }
-    }, [amount]);
-
-    useEffect(() => {
-        if (receiptPrice > 0) {
-            setReceiptPriceDisplay(formatNumberWithSpaces(receiptPrice));
-        }
-    }, [receiptPrice]);
-
-    useEffect(() => {
-        if (sellingPrice > 0) {
-            setSellingPriceDisplay(formatNumberWithSpaces(sellingPrice));
-        }
-    }, [sellingPrice]);
 
     useEffect(() => {
         if (product) {
@@ -139,45 +90,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     : "");
             setProductCode(codeValue);
             setDescription(product.description || "");
-            // amount mapping
-            const mappedAmount =
-                (typeof product.total_amount === "number"
-                    ? product.total_amount
-                    : undefined) ??
-                product.amount ??
-                0;
-            setAmount(mappedAmount);
-
-            // prices come as USD; last_receipt_price can be string
-            let mappedReceipt = 0;
-            if (typeof product.last_receipt_price === "number") {
-                mappedReceipt = product.last_receipt_price;
-            } else if (typeof product.last_receipt_price === "string") {
-                const parsed = parseFloat(product.last_receipt_price);
-                mappedReceipt = isNaN(parsed) ? 0 : parsed;
-            } else if (typeof product.receipt_price === "number") {
-                mappedReceipt = product.receipt_price;
-            }
-            setReceiptPrice(mappedReceipt);
-
-            const mappedSelling =
-                typeof product.selling_price === "string"
-                    ? parseFloat(product.selling_price)
-                    : typeof product.selling_price === "number"
-                    ? product.selling_price
-                    : 0;
-            setSellingPrice(mappedSelling);
-
-            // seed display fields
-            setAmountDisplay(
-                mappedAmount > 0 ? formatNumberWithSpaces(mappedAmount) : ""
-            );
-            setReceiptPriceDisplay(
-                mappedReceipt > 0 ? mappedReceipt.toString() : ""
-            );
-            setSellingPriceDisplay(
-                mappedSelling > 0 ? mappedSelling.toString() : ""
-            );
 
             // dollar rate from payload if present
             const rateFromPayload =
@@ -270,21 +182,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
             return;
         }
 
-        if (amount <= 0) {
-            toast.error("Miqdor 0 dan katta bo'lishi kerak");
-            return;
-        }
-
-        if (receiptPrice <= 0) {
-            toast.error("Sotib olish narxi 0 dan katta bo'lishi kerak");
-            return;
-        }
-
-        if (sellingPrice <= 0) {
-            toast.error("Sotish narxi 0 dan katta bo'lishi kerak");
-            return;
-        }
-
         setIsLoading(true);
 
         try {
@@ -301,10 +198,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                 payload.description = description.trim();
             }
 
-            // Add new fields
-            payload.amount = amount;
-            payload.receipt_price = receiptPrice;
-            payload.selling_price = sellingPrice;
             payload.cash_type = 0; // Static value as requested
 
             // Agar yangi rasm yuklangan bo'lsa, uni ishlatish
@@ -344,12 +237,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         setProductName("");
         setProductCode("");
         setDescription("");
-        setAmount(0);
-        setReceiptPrice(0);
-        setSellingPrice(0);
-        setAmountDisplay("");
-        setReceiptPriceDisplay("");
-        setSellingPriceDisplay("");
         setImageUploadStatus({ type: null, message: "" });
         setIsUploadingImage(false);
         onClose();
@@ -397,108 +284,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         rows={3}
                     />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <Label htmlFor="amount">Miqdor *</Label>
-                        <Input
-                            type="text"
-                            id="amount"
-                            placeholder="0"
-                            value={amountDisplay}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                // Allow only numbers and spaces (no decimal for amount)
-                                const sanitized = value.replace(/[^\d\s]/g, "");
-
-                                setAmountDisplay(sanitized);
-
-                                // Update the actual number value
-                                const numValue =
-                                    parseFormattedNumber(sanitized);
-                                setAmount(numValue);
-                            }}
-                        />
-                    </div>
-
-                    <div>
-                        <Label htmlFor="receiptPrice">
-                            Sotib olish narxi (USD) *
-                        </Label>
-                        <Input
-                            type="text"
-                            id="receiptPrice"
-                            placeholder="0.00"
-                            value={receiptPriceDisplay}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                // Allow only numbers, spaces, and one decimal point
-                                const sanitized = value.replace(
-                                    /[^\d\s.]/g,
-                                    ""
-                                );
-
-                                // Ensure only one decimal point
-                                const parts = sanitized.split(".");
-                                if (parts.length > 2) {
-                                    return; // Don't update if more than one decimal point
-                                }
-
-                                setReceiptPriceDisplay(sanitized);
-
-                                // Update the actual number value
-                                const numValue =
-                                    parseFormattedNumber(sanitized);
-                                setReceiptPrice(numValue);
-                            }}
-                        />
-                        {/* SUM Equivalent for Receipt Price */}
-                        {receiptPrice > 0 && usdRate > 0 && (
-                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                ≈ {calculateSUMEquivalent(receiptPrice)} so'm
-                            </div>
-                        )}
-                    </div>
-
-                    <div>
-                        <Label htmlFor="sellingPrice">
-                            Sotish narxi (USD) *
-                        </Label>
-                        <Input
-                            type="text"
-                            id="sellingPrice"
-                            placeholder="0.00"
-                            value={sellingPriceDisplay}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                // Allow only numbers, spaces, and one decimal point
-                                const sanitized = value.replace(
-                                    /[^\d\s.]/g,
-                                    ""
-                                );
-
-                                // Ensure only one decimal point
-                                const parts = sanitized.split(".");
-                                if (parts.length > 2) {
-                                    return;
-                                }
-
-                                setSellingPriceDisplay(sanitized);
-
-                                // Update the actual number value
-                                const numValue =
-                                    parseFormattedNumber(sanitized);
-                                setSellingPrice(numValue);
-                            }}
-                        />
-                        {/* SUM Equivalent for Selling Price */}
-                        {sellingPrice > 0 && usdRate > 0 && (
-                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                ≈ {calculateSUMEquivalent(sellingPrice)} so'm
-                            </div>
-                        )}
-                    </div>
                 </div>
 
                 <div>

@@ -40,7 +40,7 @@ export default function DollarRateModal({
         setIsLoading(true);
         try {
             const response = await PostDataTokenJson(
-                "api/payments/dollarcreate",
+                "api/arrival/dollarcreate",
                 {
                     dollar_rate: parseFloat(newRate),
                 }
