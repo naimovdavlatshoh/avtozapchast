@@ -28,6 +28,7 @@ interface Product {
     image_id?: number;
     created_at?: string;
     updated_at?: string;
+    image_path?: string;
 }
 
 interface EditProductModalProps {
@@ -46,6 +47,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     const [productName, setProductName] = useState("");
     const [productCode, setProductCode] = useState("");
     const [description, setDescription] = useState("");
+    const [productImage, setProductImage] = useState("");
     const [usdRate, setUsdRate] = useState<number>(0);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [currentImageId, setCurrentImageId] = useState<number | null>(null);
@@ -89,6 +91,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     ? String(product.barcode)
                     : "");
             setProductCode(codeValue);
+            setProductImage(product.image_path || "");
             setDescription(product.description || "");
 
             // dollar rate from payload if present
@@ -288,21 +291,21 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
                 <div>
                     <Label htmlFor="image">Rasm</Label>
-                    {currentImageId && currentImageUrl && (
-                        <div className="mb-2">
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                Joriy rasm:
-                            </p>
-                            <img
-                                src={currentImageUrl}
-                                alt="Joriy rasm"
-                                className="w-20 h-20 object-cover rounded border"
-                                onError={(e) => {
-                                    e.currentTarget.style.display = "none";
-                                }}
-                            />
-                        </div>
-                    )}
+
+                    <div className="mb-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            Joriy rasm:
+                        </p>
+                        <img
+                            src={productImage}
+                            alt="Joriy rasm"
+                            className="w-20 h-20 object-cover rounded border"
+                            onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                            }}
+                        />
+                    </div>
+
                     <input
                         type="file"
                         id="image"

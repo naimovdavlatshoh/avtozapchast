@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import EditProductModal from "./EditProductModal";
-import { GetDataSimpleBlob, UpdateProductPrice } from "../../service/data";
+import { UpdateProductPrice } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
 import { formatDate } from "../../utils/dateFormat";
 import { Modal } from "../../components/ui/modal";
@@ -21,6 +21,7 @@ interface Product {
     updated_at?: string;
     receipt_price_uzs: string;
     selling_price_uzs: string;
+    image_path: string;
 }
 
 interface TableProductProps {
@@ -36,10 +37,7 @@ const TableProduct: React.FC<TableProductProps> = ({
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(
         null
     );
-    const [imageUrls, setImageUrls] = useState<{ [key: number]: string }>({});
-    const [imageLoadingStates, setImageLoadingStates] = useState<{
-        [key: number]: boolean;
-    }>({});
+
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [selectedImageUrl, setSelectedImageUrl] = useState<string>("");
     const [editingProductId, setEditingProductId] = useState<number | null>(
@@ -174,57 +172,6 @@ const TableProduct: React.FC<TableProductProps> = ({
         }
     };
 
-    useEffect(() => {
-        const loadImages = async () => {
-            const newImageUrls: { [key: number]: string } = {};
-            const loadingStates: { [key: number]: boolean } = {};
-
-            for (const product of products) {
-                if (product.image_id && !imageUrls[product.image_id]) {
-                    // Set loading state for this image
-                    loadingStates[product.image_id] = true;
-                    setImageLoadingStates((prev) => ({
-                        ...prev,
-                        [product.image_id!]: true,
-                    }));
-
-                    try {
-                        const response = await GetDataSimpleBlob(
-                            `api/products/image/${product.image_id}`
-                        );
-                        newImageUrls[product.image_id] =
-                            URL.createObjectURL(response);
-                    } catch (error) {
-                        console.error(
-                            `Rasm yuklashda xatolik (ID: ${product.image_id}):`,
-                            error
-                        );
-                    } finally {
-                        // Remove loading state when done
-                        setImageLoadingStates((prev) => {
-                            const newState = { ...prev };
-                            delete newState[product.image_id!];
-                            return newState;
-                        });
-                    }
-                }
-            }
-
-            if (Object.keys(newImageUrls).length > 0) {
-                setImageUrls((prev) => ({ ...prev, ...newImageUrls }));
-            }
-        };
-
-        loadImages();
-    }, [products, imageUrls]);
-
-    const getImageUrl = (imageId?: number) => {
-        if (imageId && imageUrls[imageId]) {
-            return imageUrls[imageId];
-        }
-        return null;
-    };
-
     return (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
             <div className="max-w-full overflow-x-auto">
@@ -282,62 +229,23 @@ const TableProduct: React.FC<TableProductProps> = ({
                                     <td className="px-6 py-4">
                                         {product.image_id ? (
                                             <div className="relative w-10 h-10">
-                                                {/* Loading state */}
-                                                {imageLoadingStates[
-                                                    product.image_id
-                                                ] && (
-                                                    <div className="absolute inset-0 w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                                                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                                    </div>
-                                                )}
-
-                                                {/* Image */}
-                                                {getImageUrl(
-                                                    product.image_id
-                                                ) &&
-                                                    !imageLoadingStates[
-                                                        product.image_id
-                                                    ] && (
-                                                        <img
-                                                            src={
-                                                                getImageUrl(
-                                                                    product.image_id
-                                                                ) || ""
-                                                            }
-                                                            alt={
-                                                                product.product_name ||
-                                                                ""
-                                                            }
-                                                            className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                                                            onClick={() => {
-                                                                const imageUrl =
-                                                                    getImageUrl(
-                                                                        product.image_id
-                                                                    );
-                                                                if (imageUrl) {
-                                                                    handleImageClick(
-                                                                        imageUrl
-                                                                    );
-                                                                }
-                                                            }}
-                                                            onError={(e) => {
-                                                                e.currentTarget.style.display =
-                                                                    "none";
-                                                            }}
-                                                        />
-                                                    )}
-
-                                                {/* Fallback when no image or loading failed */}
-                                                {!getImageUrl(
-                                                    product.image_id
-                                                ) &&
-                                                    !imageLoadingStates[
-                                                        product.image_id
-                                                    ] && (
-                                                        <div className="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                                                            <MdOutlineImageNotSupported className="w-5 h-5 text-gray-400" />
-                                                        </div>
-                                                    )}
+                                                <img
+                                                    src={product.image_path}
+                                                    alt={
+                                                        product.product_name ||
+                                                        ""
+                                                    }
+                                                    className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                                    onClick={() => {
+                                                        handleImageClick(
+                                                            product.image_path
+                                                        );
+                                                    }}
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display =
+                                                            "none";
+                                                    }}
+                                                />
                                             </div>
                                         ) : (
                                             <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
@@ -571,18 +479,22 @@ const TableProduct: React.FC<TableProductProps> = ({
             )}
 
             {/* Rasm modal */}
-            <Modal isOpen={imageModalOpen} onClose={handleCloseImageModal}>
-                <div className="p-6">
-                    <div className="flex justify-between items-center mb-10">
-                        <h3 className="text-lg font-semibold text-gray-900">
+            <Modal
+                isOpen={imageModalOpen}
+                onClose={handleCloseImageModal}
+                className="w-full h-full max-w-none max-h-none"
+            >
+                <div className="w-full h-full flex flex-col p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                             Mahsulot rasmi
                         </h3>
                         <button
                             onClick={handleCloseImageModal}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-2"
                         >
                             <svg
-                                className="w-6 h-6"
+                                className="w-8 h-8"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -596,11 +508,11 @@ const TableProduct: React.FC<TableProductProps> = ({
                             </svg>
                         </button>
                     </div>
-                    <div className="flex justify-center">
+                    <div className="flex-1 flex justify-center items-center overflow-hidden p-4">
                         <img
                             src={selectedImageUrl}
                             alt="Mahsulot rasmi"
-                            className="max-w-full max-h-96 rounded-lg shadow-lg object-contain"
+                            className="max-w-[90%] max-h-[80vh] w-auto h-auto rounded-lg shadow-2xl object-contain"
                         />
                     </div>
                 </div>
