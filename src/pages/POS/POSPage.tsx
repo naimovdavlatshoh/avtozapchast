@@ -25,6 +25,7 @@ import {
 import Select from "../../components/form/Select";
 import { Link } from "react-router";
 import { Modal } from "../../components/ui/modal";
+import DollarRateModal from "../../components/modals/DollarRateModal";
 
 interface Product {
     product_id: number;
@@ -87,18 +88,23 @@ const POSPage: React.FC = () => {
     const [comments, setComments] = useState("");
     const [discount, setDiscount] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [dollarRate, setDollarRate] = useState<number>(0);
+    const [dollarRateModalOpen, setDollarRateModalOpen] = useState(false);
+
+    // Fetch dollar rate function
+    const syncRate = async () => {
+        try {
+            const res: any = await GetDataSimple("api/arrival/dollar");
+            const rate = res?.dollar_rate || 0;
+            setDollarRate(rate);
+            if (rate > 0) setExchangeRate(rate);
+        } catch (e) {
+            // ignore
+        }
+    };
 
     // Ensure global exchange rate is up-to-date on POS mount
     useEffect(() => {
-        const syncRate = async () => {
-            try {
-                const res: any = await GetDataSimple("api/arrival/dollar");
-                const rate = res?.dollar_rate || 0;
-                if (rate > 0) setExchangeRate(rate);
-            } catch (e) {
-                // ignore
-            }
-        };
         syncRate();
     }, []);
 
@@ -524,7 +530,37 @@ const POSPage: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900">
                             Do'kondagi mahsulotlar
                         </h1>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
+                            {/* Dollar Rate Display */}
+                            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <div className="flex items-center gap-1">
+                                    <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                                        $
+                                    </span>
+                                    <span className="text-blue-700 dark:text-blue-300 font-medium text-sm">
+                                        {formatNumber(dollarRate)}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setDollarRateModalOpen(true)}
+                                    className="p-1 hover:bg-green-100 dark:hover:bg-green-800/30 rounded transition-colors"
+                                    title="Kursni yangilash"
+                                >
+                                    <svg
+                                        className="w-3 h-3 text-blue-600 dark:text-blue-400"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
                             <Link
                                 to={"/sales-history"}
                                 className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -1059,7 +1095,8 @@ const POSPage: React.FC = () => {
                                                 convertUsdToUzs(
                                                     getTotalAmount()
                                                 )
-                                            )}so'm
+                                            )}
+                                            so'm
                                         </p>
                                     )}
                                 </div>
@@ -1231,6 +1268,17 @@ const POSPage: React.FC = () => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Dollar Rate Modal */}
+            <DollarRateModal
+                isOpen={dollarRateModalOpen}
+                onClose={() => setDollarRateModalOpen(false)}
+                onSuccess={() => {
+                    syncRate();
+                    setDollarRateModalOpen(false);
+                }}
+                currentRate={dollarRate}
+            />
         </div>
     );
 };
