@@ -247,9 +247,9 @@ const TableArrival: React.FC<TableArrivalProps> = ({ arrivals }) => {
                                                         {item.amount}
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-900">
-                                                        {formatNumber(
+                                                        {
                                                             item.receipt_price
-                                                        )}{" "}
+                                                        }{" "}
                                                         {
                                                             selectedArrival.cash_type_text
                                                         }

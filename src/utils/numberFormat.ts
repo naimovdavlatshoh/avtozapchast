@@ -22,6 +22,20 @@ export const formatNumber = (
 
     return currency ? `${formatted} ${currency}` : formatted;
 };
+export const formatNumberWithDot = (
+    amount: number | string,
+    currency?: string
+): string => {
+    if (amount === null || amount === undefined) return "0";
+
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+
+    if (isNaN(numAmount)) return "0";
+
+    const formatted = numAmount.toLocaleString("ru-RU").replace(/,/g, ".");
+
+    return currency ? `${formatted} ${currency}` : formatted;
+};
 
 /**
  * Formats a number as currency with Uzbek locale

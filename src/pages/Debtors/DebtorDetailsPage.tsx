@@ -53,6 +53,7 @@ const DebtorDetailsPage: React.FC = () => {
     // Payment modal state
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState("");
+    const [paymentAmountDisplay, setPaymentAmountDisplay] = useState("");
     const [paymentComments, setPaymentComments] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -97,6 +98,7 @@ const DebtorDetailsPage: React.FC = () => {
     // Payment functions
     const handlePayment = () => {
         setPaymentAmount("");
+        setPaymentAmountDisplay("");
         setPaymentComments("");
         setIsPaymentModalOpen(true);
     };
@@ -104,7 +106,55 @@ const DebtorDetailsPage: React.FC = () => {
     const handleClosePaymentModal = () => {
         setIsPaymentModalOpen(false);
         setPaymentAmount("");
+        setPaymentAmountDisplay("");
         setPaymentComments("");
+    };
+
+    // Format number input
+    const handlePaymentAmountChange = (value: string) => {
+        // Remove all non-digit characters except decimal point
+        const cleanValue = value.replace(/[^\d.]/g, "");
+
+        // Allow only one decimal point
+        const parts = cleanValue.split(".");
+        if (parts.length > 2) {
+            return;
+        }
+
+        // Limit decimal places to 2
+        if (parts[1] && parts[1].length > 2) {
+            return;
+        }
+
+        setPaymentAmount(cleanValue);
+
+        // Format for display with spaces, but preserve decimal point
+        if (cleanValue) {
+            // If it ends with decimal point, don't format yet
+            if (cleanValue.endsWith(".")) {
+                setPaymentAmountDisplay(cleanValue);
+                return;
+            }
+
+            // If it has decimal part, format carefully
+            if (cleanValue.includes(".")) {
+                const [integerPart, decimalPart] = cleanValue.split(".");
+                const formattedInteger = formatNumber(
+                    parseInt(integerPart) || 0
+                );
+                setPaymentAmountDisplay(`${formattedInteger}.${decimalPart}`);
+            } else {
+                // Format integer part only
+                const numValue = parseFloat(cleanValue);
+                if (!isNaN(numValue)) {
+                    setPaymentAmountDisplay(formatNumber(numValue));
+                } else {
+                    setPaymentAmountDisplay(cleanValue);
+                }
+            }
+        } else {
+            setPaymentAmountDisplay("");
+        }
     };
 
     const handleSubmitPayment = async () => {
@@ -644,10 +694,10 @@ const DebtorDetailsPage: React.FC = () => {
                                 To'lov summasi *
                             </label>
                             <input
-                                type="number"
-                                value={paymentAmount}
+                                type="text"
+                                value={paymentAmountDisplay}
                                 onChange={(e) =>
-                                    setPaymentAmount(e.target.value)
+                                    handlePaymentAmountChange(e.target.value)
                                 }
                                 placeholder="To'lov summasini kiriting"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"

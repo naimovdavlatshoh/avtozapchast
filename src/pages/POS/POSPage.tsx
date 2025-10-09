@@ -91,6 +91,11 @@ const POSPage: React.FC = () => {
     const [dollarRate, setDollarRate] = useState<number>(0);
     const [dollarRateModalOpen, setDollarRateModalOpen] = useState(false);
 
+    // Image modal state
+    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [selectedImageUrl, setSelectedImageUrl] = useState<string>("");
+    const [selectedProductName, setSelectedProductName] = useState<string>("");
+
     // Fetch dollar rate function
     const syncRate = async () => {
         try {
@@ -294,7 +299,9 @@ const POSPage: React.FC = () => {
                         ? {
                               ...item,
                               quantity: item.quantity + 1,
-                              total: (item.quantity + 1) * item.selling_price,
+                              total:
+                                  (item.quantity + 1) *
+                                  Number(item.selling_price),
                           }
                         : item
                 );
@@ -309,7 +316,7 @@ const POSPage: React.FC = () => {
                         last_receipt_price: product.last_receipt_price,
                         total_amount: product.total_amount,
                         quantity: 1,
-                        total: product.selling_price,
+                        total: Number(product.selling_price),
                         image_id: product.image_id,
                         cash_type_text: product.cash_type_text,
                         cash_type: product.cash_type,
@@ -339,7 +346,7 @@ const POSPage: React.FC = () => {
                     ? {
                           ...item,
                           quantity: newQuantity,
-                          total: newQuantity * item.selling_price,
+                          total: newQuantity * Number(item.selling_price),
                       }
                     : item
             );
@@ -364,8 +371,10 @@ const POSPage: React.FC = () => {
     };
 
     const getTotalAmount = () => {
-        return cart.reduce((total, item) => total + item.total, 0);
+        return cart.reduce((total, item) => total + Number(item.total), 0);
     };
+
+    console.log(getTotalAmount());
 
     const getTotalItems = () => {
         return cart.reduce((total, item) => total + item.quantity, 0);
@@ -521,7 +530,18 @@ const POSPage: React.FC = () => {
         return Math.max(0, convertUsdToUzs(total) - discountAmount);
     };
 
-    console.log(getTotalWithDiscount());
+    // Image modal functions
+    const handleImageClick = (imageUrl: string, productName: string) => {
+        setSelectedImageUrl(imageUrl);
+        setSelectedProductName(productName);
+        setIsImageModalOpen(true);
+    };
+
+    const handleCloseImageModal = () => {
+        setIsImageModalOpen(false);
+        setSelectedImageUrl("");
+        setSelectedProductName("");
+    };
 
     return (
         <div className="h-screen w-screen bg-gray-50 flex fixed inset-0 z-50">
@@ -822,7 +842,22 @@ const POSPage: React.FC = () => {
                                         className="bg-gray-50 rounded-lg p-3 flex items-center gap-3"
                                     >
                                         {/* Rasm */}
-                                        <div className="w-[150px] h-[150px] bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
+                                        <div
+                                            className="w-[150px] h-[150px] bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0 cursor-pointer hover:shadow-md transition-shadow"
+                                            onClick={() => {
+                                                if (
+                                                    item.image_id &&
+                                                    imageUrls[item.image_id]
+                                                ) {
+                                                    handleImageClick(
+                                                        imageUrls[
+                                                            item.image_id
+                                                        ],
+                                                        item.product_name
+                                                    );
+                                                }
+                                            }}
+                                        >
                                             {item.image_id &&
                                             imageUrls[item.image_id] ? (
                                                 <img
@@ -830,7 +865,7 @@ const POSPage: React.FC = () => {
                                                         imageUrls[item.image_id]
                                                     }
                                                     alt={item.product_name}
-                                                    className="w-full h-full object-cover"
+                                                    className="w-full h-full object-cover hover:scale-105 transition-transform"
                                                 />
                                             ) : (
                                                 <div className="text-2xl text-gray-400">
@@ -1079,7 +1114,7 @@ const POSPage: React.FC = () => {
                                 <span>Jami summa:</span>
                                 <div className="text-right">
                                     <span className="font-semibold text-blue-600">
-                                        {formatNumber(getTotalAmount())} $
+                                        {getTotalAmount()} $
                                     </span>
                                     {getTotalAmount() > 0 && (
                                         <p className="text-sm text-gray-500 mt-1">
@@ -1272,6 +1307,57 @@ const POSPage: React.FC = () => {
                 }}
                 currentRate={dollarRate}
             />
+
+            {/* Image Modal */}
+            <Modal isOpen={isImageModalOpen} onClose={handleCloseImageModal}>
+                <div className="p-4 w-full h-full max-w-[95vw] max-h-[95vh]">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-semibold text-gray-900">
+                            {selectedProductName}
+                        </h3>
+                        <button
+                            onClick={handleCloseImageModal}
+                            className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                        >
+                            <svg
+                                className="w-8 h-8"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div className="flex justify-center items-center h-[calc(100%-80px)]">
+                        <div className="w-full h-full overflow-hidden rounded-lg shadow-2xl bg-gray-50 flex items-center justify-center">
+                            <img
+                                src={selectedImageUrl}
+                                alt={selectedProductName}
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                    e.currentTarget.nextElementSibling?.classList.remove(
+                                        "hidden"
+                                    );
+                                }}
+                            />
+                            <div className="hidden w-full h-full bg-gray-100 items-center justify-center">
+                                <div className="text-center text-gray-500">
+                                    <div className="text-8xl mb-6">📦</div>
+                                    <p className="text-xl">Rasm yuklanmadi</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
