@@ -119,7 +119,7 @@ export default function App() {
                             <Route path="/bar-chart" element={<BarChart />} />
                             <Route path="/debtors" element={<DebtorsPage />} />
                             <Route
-                                path="/debtors/:debtorId"
+                                path="/debtors/:debtorId/:debtorName"
                                 element={<DebtorDetailsPage />}
                             />
                         </Route>

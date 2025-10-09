@@ -390,7 +390,7 @@ const DebtorsPage: React.FC = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Link
-                                                        to={`/debtors/${debtor.client_id}`}
+                                                        to={`/debtors/${debtor.client_id}/${debtor.client_name}`}
                                                         className="inline-flex items-center gap-1 px-2 py-2 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200 transition-colors"
                                                         title="Tafsilotlar"
                                                     >

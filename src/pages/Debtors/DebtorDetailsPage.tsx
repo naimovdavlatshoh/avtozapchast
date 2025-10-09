@@ -3,7 +3,7 @@ import { GetDataSimple, PostDataTokenJson } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
 import { formatDate } from "../../utils/dateFormat";
 import { useParams, useNavigate } from "react-router";
-import { MdArrowBack, MdPayment, MdDelete } from "react-icons/md";
+import { MdArrowBack, MdPayment, MdDelete, MdVisibility } from "react-icons/md";
 import { toast } from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
 
@@ -42,7 +42,10 @@ interface DebtorDetails {
 }
 
 const DebtorDetailsPage: React.FC = () => {
-    const { debtorId } = useParams<{ debtorId: string }>();
+    const { debtorId, debtorName } = useParams<{
+        debtorId: string;
+        debtorName: string;
+    }>();
     const navigate = useNavigate();
     const [debtor, setDebtor] = useState<DebtorDetails | null>(null);
     const [loading, setLoading] = useState(true);
@@ -59,6 +62,10 @@ const DebtorDetailsPage: React.FC = () => {
         null
     );
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Items modal state
+    const [isItemsModalOpen, setIsItemsModalOpen] = useState(false);
+    const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
     useEffect(() => {
         if (debtorId) {
@@ -194,6 +201,17 @@ const DebtorDetailsPage: React.FC = () => {
         }
     };
 
+    // Items modal functions
+    const handleViewItems = (sale: Sale) => {
+        setSelectedSale(sale);
+        setIsItemsModalOpen(true);
+    };
+
+    const handleCloseItemsModal = () => {
+        setIsItemsModalOpen(false);
+        setSelectedSale(null);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -239,11 +257,8 @@ const DebtorDetailsPage: React.FC = () => {
                             </button>
                             <div>
                                 <h1 className="text-3xl font-bold text-gray-900">
-                                    Qarzdor #{debtor.client_id}
+                                    Qarzdor - {debtorName}
                                 </h1>
-                                <p className="text-gray-600">
-                                    Qarzdor tafsilotlari
-                                </p>
                             </div>
                         </div>
                         <button
@@ -445,6 +460,9 @@ const DebtorDetailsPage: React.FC = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Sana
                                     </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Harakatlar
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -485,6 +503,18 @@ const DebtorDetailsPage: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {formatDate(sale.created_at)}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button
+                                                onClick={() =>
+                                                    handleViewItems(sale)
+                                                }
+                                                className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                                                title="Mahsulotlarni ko'rish"
+                                            >
+                                                <MdVisibility className="w-3 h-3" />
+                                                Mahsulotlar
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -744,6 +774,142 @@ const DebtorDetailsPage: React.FC = () => {
                                 ) : (
                                     "Ha, o'chirish"
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+
+                {/* Items Modal */}
+                <Modal
+                    isOpen={isItemsModalOpen}
+                    onClose={handleCloseItemsModal}
+                >
+                    <div className="p-6">
+                        <div className="flex items-center mb-4">
+                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                                <MdVisibility className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    Sotuv mahsulotlari
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                    Sotuv #{selectedSale?.sale_id} mahsulotlari
+                                </p>
+                            </div>
+                        </div>
+
+                        {selectedSale && (
+                            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                <h4 className="font-medium text-gray-900 mb-2">
+                                    Sotuv ma'lumotlari:
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                    <div>
+                                        <span className="font-medium">
+                                            Sotuv ID:
+                                        </span>{" "}
+                                        #{selectedSale.sale_id}
+                                    </div>
+                                    <div>
+                                        <span className="font-medium">
+                                            Jami summa:
+                                        </span>{" "}
+                                        {formatNumber(selectedSale.total_price)}{" "}
+                                        so'm
+                                    </div>
+                                    <div>
+                                        <span className="font-medium">
+                                            Chegirma:
+                                        </span>{" "}
+                                        {formatNumber(selectedSale.discount)}{" "}
+                                        so'm
+                                    </div>
+                                    <div>
+                                        <span className="font-medium">
+                                            To'lanadigan:
+                                        </span>{" "}
+                                        {formatNumber(
+                                            selectedSale.total_price_with_discount
+                                        )}{" "}
+                                        so'm
+                                    </div>
+                                    <div className="col-span-2">
+                                        <span className="font-medium">
+                                            Sana:
+                                        </span>{" "}
+                                        {formatDate(selectedSale.created_at)}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mb-6">
+                            <h4 className="font-medium text-gray-900 mb-4">
+                                Mahsulotlar ({selectedSale?.items.length || 0}{" "}
+                                dona)
+                            </h4>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                #
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Mahsulot nomi
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Mahsulot kodi
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Barkod
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Miqdor
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {selectedSale?.items.map(
+                                            (item, index) => (
+                                                <tr
+                                                    key={item.sale_item_id}
+                                                    className="hover:bg-gray-50"
+                                                >
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {index + 1}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <span className="text-sm font-medium text-gray-900">
+                                                            {item.product_name}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {item.product_code}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {item.barcode}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                            {item.amount} dona
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handleCloseItemsModal}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                Yopish
                             </button>
                         </div>
                     </div>
