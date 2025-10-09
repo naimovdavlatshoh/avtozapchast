@@ -203,7 +203,7 @@ const CheckPage: React.FC = () => {
                                 <span>К оплате:</span>
                                 <span className="text-xl">
                                     {formatNumber(
-                                        saleData.totalAmount -
+                                        convertUsdToUzs(saleData.totalAmount) -
                                             parseFloat(saleData.discount)
                                     )}{" "}
                                     UZS

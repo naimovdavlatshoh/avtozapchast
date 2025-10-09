@@ -3,7 +3,7 @@ import { handleAuthError } from "../utils/authUtils";
 
 // Get BASE_URL from environment variables
 export const BASE_URL =
-    import.meta.env.VITE_BASE_URL || "https://azizapi.argon.uz/";
+    import.meta.env.VITE_BASE_URL || "https://apistore.afandicloud.uz/";
 
 // Block requests to avtozapchast.netlify.app
 axios.interceptors.request.use(

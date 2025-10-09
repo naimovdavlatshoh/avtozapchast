@@ -372,9 +372,9 @@ const TableProduct: React.FC<TableProductProps> = ({
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     type="text"
-                                                    value={formatNumber(
+                                                    value={
                                                         priceInputValue
-                                                    )}
+                                                    }
                                                     onChange={(e) => {
                                                         const value =
                                                             e.target.value.replace(
@@ -472,9 +472,9 @@ const TableProduct: React.FC<TableProductProps> = ({
                                         ) : (
                                             <div className="flex items-center gap-2">
                                                 <span>
-                                                    {formatNumber(
+                                                    {
                                                         product.selling_price
-                                                    )}{" "}
+                                                    }{" "}
                                                     $
                                                 </span>
                                                 <button

@@ -518,8 +518,10 @@ const POSPage: React.FC = () => {
     const getTotalWithDiscount = () => {
         const total = getTotalAmount();
         const discountAmount = parseFloat(discount) || 0;
-        return Math.max(0, total - discountAmount);
+        return Math.max(0, convertUsdToUzs(total) - discountAmount);
     };
+
+    console.log(getTotalWithDiscount());
 
     return (
         <div className="h-screen w-screen bg-gray-50 flex fixed inset-0 z-50">
@@ -696,9 +698,7 @@ const POSPage: React.FC = () => {
                                             >
                                                 {product?.selling_price &&
                                                 product.selling_price > 0
-                                                    ? `${formatNumber(
-                                                          product.selling_price
-                                                      )}`
+                                                    ? `${product.selling_price}`
                                                     : "Narx belgilanmagan"}
                                             </p>
                                         </div>
@@ -723,9 +723,9 @@ const POSPage: React.FC = () => {
                                             <div className="text-right">
                                                 <p className="text-xl text-gray-800 font-semibold">
                                                     {product?.last_receipt_price
-                                                        ? `${formatNumber(
+                                                        ? `${
                                                               product.last_receipt_price
-                                                          )} ${
+                                                          } ${
                                                               product?.cash_type_text ||
                                                               "$"
                                                           }`
@@ -802,7 +802,7 @@ const POSPage: React.FC = () => {
                             <div className="flex justify-between text-lg font-bold mt-2">
                                 <span>Jami:</span>
                                 <span className="text-blue-600">
-                                    {formatNumber(getTotalAmount())} so'm
+                                    {getTotalAmount()} so'm
                                 </span>
                             </div>
                         </div>
@@ -871,10 +871,8 @@ const POSPage: React.FC = () => {
                                                         Sotish narxi ($):
                                                     </span>
                                                     <span className="text-lg font-bold text-green-600">
-                                                        {formatNumber(
-                                                            item.selling_price ||
-                                                                0
-                                                        )}{" "}
+                                                        {item.selling_price ||
+                                                            0}{" "}
                                                         $
                                                     </span>
                                                 </div>
@@ -897,10 +895,8 @@ const POSPage: React.FC = () => {
                                                     <div>
                                                         <span>
                                                             Sotib olingan:{" "}
-                                                            {formatNumber(
-                                                                item.last_receipt_price ||
-                                                                    0
-                                                            )}{" "}
+                                                            {item.last_receipt_price ||
+                                                                0}{" "}
                                                             {item.cash_type_text ||
                                                                 "so'm"}
                                                         </span>
@@ -958,10 +954,7 @@ const POSPage: React.FC = () => {
                                                 <div className="flex flex-col items-end">
                                                     {" "}
                                                     <span className="text-md font-semibold text-blue-600">
-                                                        {formatNumber(
-                                                            item?.total || 0
-                                                        )}{" "}
-                                                        $
+                                                        {item?.total || 0} $
                                                     </span>
                                                     <span className="text-lg font-semibold text-blue-600">
                                                         {formatNumber(
