@@ -14,6 +14,8 @@ interface SaleItem {
     amount: number;
     barcode: number;
     product_code: string;
+    selling_price: number;
+    selling_price_usd: number;
     created_at: string;
 }
 
@@ -386,110 +388,8 @@ const SaleDetailsPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sale Details */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <svg
-                                    className="w-4 h-4 text-blue-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                </svg>
-                            </div>
-                            Sotuv ma'lumotlari
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                <span className="text-gray-600 font-medium">
-                                    Sotuv ID:
-                                </span>
-                                <span className="font-bold text-gray-900 text-lg">
-                                    #{sale.sale_id}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                <span className="text-gray-600 font-medium">
-                                    Sana:
-                                </span>
-                                <span className="font-medium text-gray-900">
-                                    {formatDate(sale.created_at)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center py-3">
-                                <span className="text-gray-600 font-medium">
-                                    Holat:
-                                </span>
-                                {getStatusBadge(sale.is_debt)}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                <svg
-                                    className="w-4 h-4 text-purple-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                                    />
-                                </svg>
-                            </div>
-                            Qo'shimcha ma'lumotlar
-                        </h3>
-                        <div className="space-y-4">
-                            {sale.comments ? (
-                                <div>
-                                    <span className="text-gray-600 font-medium block mb-3">
-                                        Izoh:
-                                    </span>
-                                    <div className="bg-gray-50 p-4 rounded-lg border">
-                                        <p className="text-gray-900 text-sm leading-relaxed">
-                                            {sale.comments}
-                                        </p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center text-gray-500 py-8">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <svg
-                                            className="w-8 h-8 text-gray-400"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <p className="text-sm">Izoh yo'q</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
                 {/* Mahsulotlar ro'yxati */}
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-10">
                     <div className="px-6 py-4 border-b border-gray-200">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
@@ -516,7 +416,7 @@ const SaleDetailsPage: React.FC = () => {
                             </h3>
 
                             {/* View Mode Toggle Buttons */}
-                            <div className="flex bg-gray-100 rounded-lg p-1">
+                            <div className="flex bg-gray-100 rounded-xl p-1">
                                 <button
                                     onClick={() => setViewMode("sold")}
                                     className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -551,7 +451,10 @@ const SaleDetailsPage: React.FC = () => {
                                         Kodi
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        Barcode
+                                        Narxi (so'm)
+                                    </th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Narxi (USD)
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Miqdor
@@ -596,8 +499,18 @@ const SaleDetailsPage: React.FC = () => {
                                                     {item.product_code}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                                                {item.barcode}
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                                    {formatNumber(
+                                                        item.selling_price
+                                                    )}{" "}
+                                                    so'm
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                                    {item.selling_price_usd} $
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
@@ -700,6 +613,108 @@ const SaleDetailsPage: React.FC = () => {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                {/* Sale Details */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <svg
+                                    className="w-4 h-4 text-blue-600"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                            </div>
+                            Sotuv ma'lumotlari
+                        </h3>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                                <span className="text-gray-600 font-medium">
+                                    Sotuv ID:
+                                </span>
+                                <span className="font-bold text-gray-900 text-lg">
+                                    #{sale.sale_id}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                                <span className="text-gray-600 font-medium">
+                                    Sana:
+                                </span>
+                                <span className="font-medium text-gray-900">
+                                    {formatDate(sale.created_at)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center py-3">
+                                <span className="text-gray-600 font-medium">
+                                    Holat:
+                                </span>
+                                {getStatusBadge(sale.is_debt)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <svg
+                                    className="w-4 h-4 text-purple-600"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                                    />
+                                </svg>
+                            </div>
+                            Qo'shimcha ma'lumotlar
+                        </h3>
+                        <div className="space-y-4">
+                            {sale.comments ? (
+                                <div>
+                                    <span className="text-gray-600 font-medium block mb-3">
+                                        Izoh:
+                                    </span>
+                                    <div className="bg-gray-50 p-4 rounded-lg border">
+                                        <p className="text-gray-900 text-sm leading-relaxed">
+                                            {sale.comments}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center text-gray-500 py-8">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg
+                                            className="w-8 h-8 text-gray-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <p className="text-sm">Izoh yo'q</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

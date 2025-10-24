@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router";
 import Pagination from "../../components/common/Pagination";
 import { Modal } from "../../components/ui/modal";
 import { toast } from "react-hot-toast";
+import DatePicker from "../../components/form/date-picker";
 
 interface SaleItem {
     sale_item_id: number;
@@ -57,6 +58,17 @@ const SalesHistoryPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const navigate = useNavigate();
 
+    // Date filter state - default to today (local timezone)
+    const today = new Date();
+    const todayString =
+        today.getFullYear() +
+        "-" +
+        String(today.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(today.getDate()).padStart(2, "0");
+    const [startDate, setStartDate] = useState(todayString);
+    const [endDate, setEndDate] = useState(todayString);
+
     // Delete modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
@@ -65,9 +77,19 @@ const SalesHistoryPage: React.FC = () => {
     const fetchSalesHistory = async (page: number = 1) => {
         try {
             setLoading(true);
-            const response = await GetDataSimple(
-                `api/sale/list?page=${page}&limit=30`
-            );
+
+            // URL parametrlarini tayyorlash
+            let url = `api/sale/list?page=${page}&limit=30`;
+
+            if (startDate) {
+                url += `&start_date=${startDate}`;
+            }
+
+            if (endDate) {
+                url += `&end_date=${endDate}`;
+            }
+
+            const response = await GetDataSimple(url);
             if (response?.result) {
                 setSalesData(response);
             }
@@ -80,7 +102,7 @@ const SalesHistoryPage: React.FC = () => {
 
     useEffect(() => {
         fetchSalesHistory(currentPage);
-    }, [currentPage]);
+    }, [currentPage, startDate, endDate]);
 
     const handleBack = () => {
         navigate(-1);
@@ -202,6 +224,75 @@ const SalesHistoryPage: React.FC = () => {
                             <h1 className="text-2xl font-bold text-gray-900">
                                 Sotuv tarixi
                             </h1>
+                        </div>
+
+                        {/* Date Pickers */}
+                        <div className="flex items-center gap-4">
+                            <label htmlFor="">Boshlanish sanasi:</label>
+                            <div className="w-48">
+                                <DatePicker
+                                    id="start-date"
+                                    label=""
+                                    defaultDate={startDate}
+                                    onChange={(selectedDates) => {
+                                        if (
+                                            selectedDates &&
+                                            selectedDates.length > 0
+                                        ) {
+                                            const date = selectedDates[0];
+                                            const year = date.getFullYear();
+                                            const month = String(
+                                                date.getMonth() + 1
+                                            ).padStart(2, "0");
+                                            const day = String(
+                                                date.getDate()
+                                            ).padStart(2, "0");
+                                            setStartDate(
+                                                `${year}-${month}-${day}`
+                                            );
+                                        }
+                                    }}
+                                    placeholder="Boshlanish sanasi"
+                                />
+                            </div>
+                            {"-"}
+                            <label htmlFor="">Tugash sanasi:</label>
+                            <div className="w-48">
+                                <DatePicker
+                                    id="end-date"
+                                    label=""
+                                    defaultDate={endDate}
+                                    onChange={(selectedDates) => {
+                                        if (
+                                            selectedDates &&
+                                            selectedDates.length > 0
+                                        ) {
+                                            const date = selectedDates[0];
+                                            const year = date.getFullYear();
+                                            const month = String(
+                                                date.getMonth() + 1
+                                            ).padStart(2, "0");
+                                            const day = String(
+                                                date.getDate()
+                                            ).padStart(2, "0");
+                                            setEndDate(
+                                                `${year}-${month}-${day}`
+                                            );
+                                        }
+                                    }}
+                                    placeholder="Tugash sanasi"
+                                />
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setStartDate(todayString);
+                                    setEndDate(todayString);
+                                    setCurrentPage(1);
+                                }}
+                                className="px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                                Bugungi kun
+                            </button>
                         </div>
                     </div>
                 </div>

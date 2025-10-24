@@ -37,6 +37,7 @@ interface Product {
     barcode?: number;
     description?: string;
     image_id?: number;
+    image_path?: string;
     created_at: string;
     cash_type_text?: string;
     cash_type?: number;
@@ -52,6 +53,7 @@ interface CartItem {
     quantity: number;
     total: number;
     image_id?: number;
+    image_path?: string;
     cash_type_text?: string;
     cash_type?: number;
 }
@@ -80,8 +82,6 @@ const POSPage: React.FC = () => {
     const [imageUrls, setImageUrls] = useState<{ [key: number]: string }>({});
     const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Checkout modal state
-    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
     const [isDebt, setIsDebt] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [clients, setClients] = useState<Client[]>([]);
@@ -147,13 +147,6 @@ const POSPage: React.FC = () => {
 
         loadImages();
     }, [products, imageUrls]);
-
-    const getImageUrl = (imageId?: number) => {
-        if (imageId && imageUrls[imageId]) {
-            return imageUrls[imageId];
-        }
-        return null;
-    };
 
     // Barcode scanner funksiyasi
     useEffect(() => {
@@ -318,6 +311,7 @@ const POSPage: React.FC = () => {
                         quantity: 1,
                         total: Number(product.selling_price),
                         image_id: product.image_id,
+                        image_path: product.image_path,
                         cash_type_text: product.cash_type_text,
                         cash_type: product.cash_type,
                     },
@@ -378,14 +372,6 @@ const POSPage: React.FC = () => {
 
     const getTotalItems = () => {
         return cart.reduce((total, item) => total + item.quantity, 0);
-    };
-
-    const handleCheckout = () => {
-        if (cart.length === 0) {
-            toast.error("Karzina bo'sh");
-            return;
-        }
-        setIsCheckoutModalOpen(true);
     };
 
     // Mijozlarni yuklash
@@ -486,7 +472,6 @@ const POSPage: React.FC = () => {
 
                 setCart([]);
                 localStorage.removeItem("pos_cart");
-                setIsCheckoutModalOpen(false);
                 resetCheckoutForm();
 
                 // Check sahifasini yangi vkladkada ochish
@@ -502,7 +487,6 @@ const POSPage: React.FC = () => {
             const errorMessage =
                 error.response?.data?.error || "Sotishda xatolik";
             toast.error(errorMessage);
-            handleCloseCheckoutModal();
         } finally {
             setIsSubmitting(false);
         }
@@ -515,12 +499,6 @@ const POSPage: React.FC = () => {
 
         setComments("");
         setDiscount("");
-    };
-
-    // Modal yopish
-    const handleCloseCheckoutModal = () => {
-        setIsCheckoutModalOpen(false);
-        resetCheckoutForm();
     };
 
     // Chegirma bilan umumiy summani hisoblash
@@ -544,605 +522,562 @@ const POSPage: React.FC = () => {
     };
 
     return (
-        <div className="h-screen w-screen bg-gray-50 flex fixed inset-0 z-50">
-            {/* Mahsulotlar qismi - 75% */}
-            <div className="w-full px-6 py-3 overflow-y-auto  flex flex-col gap-5">
-                <div className="h-[10vh]">
-                    <div className="flex justify-between items-center mb-4">
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            Do'kondagi mahsulotlar
-                        </h1>
-                        <div className="flex gap-2 items-center">
-                            {/* Dollar Rate Display */}
-                            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <div className="flex items-center gap-1">
-                                    <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
-                                        $
-                                    </span>
-                                    <span className="text-blue-700 dark:text-blue-300 font-medium text-sm">
-                                        {formatNumber(dollarRate)}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => setDollarRateModalOpen(true)}
-                                    className="p-1 hover:bg-green-100 dark:hover:bg-green-800/30 rounded transition-colors"
-                                    title="Kursni yangilash"
-                                >
-                                    <svg
-                                        className="w-3 h-3 text-blue-600 dark:text-blue-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                        />
-                                    </svg>
-                                </button>
+        <div className="h-screen w-screen bg-gray-50 flex flex-col fixed inset-0 z-50">
+            {/* Header */}
+            <div className="h-[vh] py-2 px-6 bg-white border-b border-gray-200 flex-shrink-0">
+                <div className="flex h-full justify-between items-center">
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        Do'kondagi mahsulotlar
+                    </h1>
+                    <div className="flex gap-2 items-center">
+                        {/* Dollar Rate Display */}
+                        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center gap-1">
+                                <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                                    $
+                                </span>
+                                <span className="text-blue-700 dark:text-blue-300 font-medium text-sm">
+                                    {formatNumber(dollarRate)}
+                                </span>
                             </div>
-                            <Link
-                                to={"/sales-history"}
-                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Sotuv tarixi"
-                            >
-                                <MdHistory className="text-2xl" />
-                            </Link>
                             <button
-                                onClick={handleLogout}
-                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Chiqish"
+                                onClick={() => setDollarRateModalOpen(true)}
+                                className="p-1 hover:bg-green-100 dark:hover:bg-green-800/30 rounded transition-colors"
+                                title="Kursni yangilash"
                             >
-                                <MdLogout className="text-2xl" />
+                                <svg
+                                    className="w-3 h-3 text-blue-600 dark:text-blue-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                </svg>
                             </button>
                         </div>
-                    </div>
-
-                    {/* Qidiruv */}
-                    <div className="relative mb-4">
-                        <input
-                            type="text"
-                            placeholder="Mahsulot qidirish..."
-                            value={searchKeyword}
-                            onChange={(e) => handleSearchChange(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        {searchKeyword && (
-                            <button
-                                onClick={() => {
-                                    setSearchKeyword("");
-                                    setIsSearching(false);
-                                    setPage(1);
-                                    setProducts([]);
-                                }}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                                ✕
-                            </button>
-                        )}
+                        <Link
+                            to={"/sales-history"}
+                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Sotuv tarixi"
+                        >
+                            <MdHistory className="text-2xl" />
+                        </Link>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Chiqish"
+                        >
+                            <MdLogout className="text-2xl" />
+                        </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Mahsulotlar ro'yxati - dropdown ko'rinishida */}
-                {searchKeyword.trim() && products.length > 0 && (
-                    <div className="fixed top-20 left-6 right-6 z-50 bg-white border border-gray-200 rounded-lg shadow-2xl max-h-96 overflow-y-auto">
-                        {products.map((product) => (
-                            <div
-                                key={product?.product_id}
-                                onClick={() => {
-                                    addToCart(product);
-                                    setSearchKeyword("");
-                                    setProducts([]);
-                                    setIsSearching(false);
-                                }}
-                                className={`flex items-center p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                                    product?.selling_price &&
-                                    product.selling_price > 0
-                                        ? "cursor-pointer"
-                                        : "cursor-not-allowed opacity-50"
-                                }`}
-                            >
-                                {/* Rasm */}
-                                <div className="w-40 h-40 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
-                                    {product.image_id ? (
-                                        <img
-                                            src={
-                                                getImageUrl(product.image_id) ||
-                                                ""
-                                            }
-                                            alt={product.product_name || ""}
-                                            className="w-full h-full object-cover rounded-lg"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display =
-                                                    "none";
-                                                e.currentTarget.nextElementSibling?.classList.remove(
-                                                    "hidden"
-                                                );
-                                            }}
-                                        />
-                                    ) : null}
-                                    <span
-                                        className={`text-3xl ${
-                                            product.image_id ? "hidden" : ""
-                                        }`}
-                                    >
-                                        📦
-                                    </span>
-                                </div>
-
-                                {/* Ma'lumotlar */}
-                                <div className="flex w-full justify-between items-center">
-                                    <div className="ml-6 ">
-                                        <h4 className="font-bold text-gray-900 text-2xl mb-3 line-clamp-1">
-                                            {product?.product_name ||
-                                                "Nomsiz mahsulot"}
-                                        </h4>
-
-                                        {/* Product Code */}
-                                        {product?.product_code && (
-                                            <p className="text-lg text-blue-600 font-semibold mb-2">
-                                                Kodi: {product.product_code}
-                                            </p>
-                                        )}
-
-                                        {/* Barcode */}
-                                        {product?.barcode && (
-                                            <p className="text-lg text-gray-700 mb-2">
-                                                Barcode: {product.barcode}
-                                            </p>
-                                        )}
-
-                                        {/* Description */}
-                                        <p className="text-lg text-gray-600 mb-4 line-clamp-2">
-                                            {product?.description ||
-                                                "Tavsif yo'q"}
-                                        </p>
-
-                                        {/* Prices and Amount */}
+            {/* Main Content - Two Column Layout */}
+            <div className="relative mt-4 px-6">
+                <input
+                    type="text"
+                    placeholder="Mahsulot qidirish..."
+                    value={searchKeyword}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchKeyword && (
+                    <button
+                        onClick={() => {
+                            setSearchKeyword("");
+                            setIsSearching(false);
+                            setPage(1);
+                            setProducts([]);
+                        }}
+                        className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                        ✕
+                    </button>
+                )}
+            </div>
+            <div className="flex-1 flex overflow-hidden">
+                {/* Left Side - Search, Products and Cart (70%) */}
+                <div className="w-[70%] px-6  overflow-y-auto">
+                    {/* Mahsulotlar ro'yxati - dropdown ko'rinishida */}
+                    {searchKeyword.trim() && products.length > 0 && (
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto mb-4">
+                            {products.map((product) => (
+                                <div
+                                    key={product?.product_id}
+                                    onClick={() => {
+                                        addToCart(product);
+                                        setSearchKeyword("");
+                                        setProducts([]);
+                                        setIsSearching(false);
+                                    }}
+                                    className={`flex items-center p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                                        product?.selling_price &&
+                                        product.selling_price > 0
+                                            ? "cursor-pointer"
+                                            : "cursor-not-allowed opacity-50"
+                                    }`}
+                                >
+                                    {/* Rasm */}
+                                    <div className="w-40 h-40 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
+                                        {product.image_path ? (
+                                            <img
+                                                src={product.image_path}
+                                                alt={product.product_name || ""}
+                                                className="w-full h-full object-cover rounded-lg"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display =
+                                                        "none";
+                                                    e.currentTarget.nextElementSibling?.classList.remove(
+                                                        "hidden"
+                                                    );
+                                                }}
+                                            />
+                                        ) : null}
+                                        <span
+                                            className={`text-3xl ${
+                                                product.image_path
+                                                    ? "hidden"
+                                                    : ""
+                                            }`}
+                                        >
+                                            📦
+                                        </span>
                                     </div>
-                                    <div className="space-y-3 ">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <span className="text-lg text-gray-700 font-semibold">
-                                                Sotish narxi ($):
-                                            </span>
 
-                                            <p
-                                                className={`text-xl font-bold ${
-                                                    product?.selling_price &&
+                                    {/* Ma'lumotlar */}
+                                    <div className="flex w-full justify-between items-center">
+                                        <div className="ml-6 ">
+                                            <h4 className="font-bold text-gray-900 text-2xl mb-3 line-clamp-1">
+                                                {product?.product_name ||
+                                                    "Nomsiz mahsulot"}
+                                            </h4>
+
+                                            {/* Product Code */}
+                                            {product?.product_code && (
+                                                <p className="text-lg text-blue-600 font-semibold mb-2">
+                                                    Kodi: {product.product_code}
+                                                </p>
+                                            )}
+
+                                            {/* Barcode */}
+                                            {product?.barcode && (
+                                                <p className="text-lg text-gray-700 mb-2">
+                                                    Barcode: {product.barcode}
+                                                </p>
+                                            )}
+
+                                            {/* Description */}
+                                            <p className="text-lg text-gray-600 mb-4 line-clamp-2">
+                                                {product?.description ||
+                                                    "Tavsif yo'q"}
+                                            </p>
+
+                                            {/* Prices and Amount */}
+                                        </div>
+                                        <div className="space-y-3 ">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-lg text-gray-700 font-semibold">
+                                                    Sotish narxi ($):
+                                                </span>
+
+                                                <p
+                                                    className={`text-xl font-bold ${
+                                                        product?.selling_price &&
+                                                        product.selling_price >
+                                                            0
+                                                            ? "text-green-600"
+                                                            : "text-red-500"
+                                                    }`}
+                                                >
+                                                    {product?.selling_price &&
                                                     product.selling_price > 0
-                                                        ? "text-green-600"
-                                                        : "text-red-500"
-                                                }`}
-                                            >
-                                                {product?.selling_price &&
-                                                product.selling_price > 0
-                                                    ? `${product.selling_price}`
-                                                    : "Narx belgilanmagan"}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center justify-between gap-3">
-                                            <span className="text-lg text-gray-700 font-semibold">
-                                                Sotish narxi (so'm):
-                                            </span>
-
-                                            <p className="text-blue-600 text-xl font-bold">
-                                                {formatNumber(
-                                                    convertUsdToUzs(
-                                                        product.selling_price
-                                                    )
-                                                )}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-lg text-gray-700 font-semibold">
-                                                Oxirgi kirim narxi:
-                                            </span>
-                                            <div className="text-right">
-                                                <p className="text-xl text-gray-800 font-semibold">
-                                                    {product?.last_receipt_price
-                                                        ? `${
-                                                              product.last_receipt_price
-                                                          } ${
-                                                              product?.cash_type_text ||
-                                                              "$"
-                                                          }`
-                                                        : "N/A"}
+                                                        ? `${product.selling_price}`
+                                                        : "Narx belgilanmagan"}
                                                 </p>
                                             </div>
-                                        </div>
-                                        {product?.cash_type === 1 && (
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-lg text-gray-700 font-semibold">
+                                                    Sotish narxi (so'm):
+                                                </span>
+
+                                                <p className="text-blue-600 text-xl font-bold">
+                                                    {formatNumber(
+                                                        convertUsdToUzs(
+                                                            product.selling_price
+                                                        )
+                                                    )}
+                                                </p>
+                                            </div>
+
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-700 font-semibold">
-                                                    Oxirgi kirim narxi (USD):
+                                                <span className="text-lg text-gray-700 font-semibold">
+                                                    Oxirgi kirim narxi:
                                                 </span>
                                                 <div className="text-right">
                                                     <p className="text-xl text-gray-800 font-semibold">
-                                                        {product?.last_receipt_price &&
-                                                            product.last_receipt_price >
-                                                                0 && (
-                                                                <p className="text-sm text-green-600">
-                                                                    ≈{" "}
-                                                                    {formatUsd(
-                                                                        convertUzsToUsd(
-                                                                            product.last_receipt_price
-                                                                        )
-                                                                    )}
-                                                                </p>
-                                                            )}
+                                                        {product?.last_receipt_price
+                                                            ? `${
+                                                                  product.last_receipt_price
+                                                              } ${
+                                                                  product?.cash_type_text ||
+                                                                  "$"
+                                                              }`
+                                                            : "N/A"}
                                                     </p>
                                                 </div>
                                             </div>
-                                        )}
+                                            {product?.cash_type === 1 && (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-700 font-semibold">
+                                                        Oxirgi kirim narxi
+                                                        (USD):
+                                                    </span>
+                                                    <div className="text-right">
+                                                        <p className="text-xl text-gray-800 font-semibold">
+                                                            {product?.last_receipt_price &&
+                                                                product.last_receipt_price >
+                                                                    0 && (
+                                                                    <p className="text-sm text-green-600">
+                                                                        ≈{" "}
+                                                                        {formatUsd(
+                                                                            convertUzsToUsd(
+                                                                                product.last_receipt_price
+                                                                            )
+                                                                        )}
+                                                                    </p>
+                                                                )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-lg text-gray-700 font-semibold">
-                                                Qolgan miqdor:
-                                            </span>
-                                            <p className="text-xl text-gray-800 font-semibold">
-                                                {product?.total_amount
-                                                    ? `${product?.total_amount} dona`
-                                                    : "Mahsulot yo'q"}
-                                            </p>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-lg text-gray-700 font-semibold">
+                                                    Qolgan miqdor:
+                                                </span>
+                                                <p className="text-xl text-gray-800 font-semibold">
+                                                    {product?.total_amount
+                                                        ? `${product?.total_amount} dona`
+                                                        : "Mahsulot yo'q"}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* Qo'shish tugmasi */}
                                 </div>
-
-                                {/* Qo'shish tugmasi */}
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Karzina qismi - search natijalari pastida */}
-                <div className="bg-white border border-gray-200 rounded-lg shadow-lg mb-6 flex flex-col h-[80vh]">
-                    <div className="p-4 border-b border-gray-200 flex-shrink-0">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                <MdShoppingCart className="text-blue-600" />
-                                Karzina
-                            </h2>
-                            <button
-                                onClick={clearCart}
-                                className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                                Tozalash
-                            </button>
+                            ))}
                         </div>
+                    )}
 
-                        <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex justify-between text-sm">
-                                <span>Mahsulotlar:</span>
-                                <span className="font-semibold">
-                                    {getTotalItems()}
-                                </span>
-                            </div>
-                            <div className="flex justify-between text-lg font-bold mt-2">
-                                <span>Jami:</span>
-                                <span className="text-blue-600">
-                                    {getTotalAmount()} so'm
-                                </span>
-                            </div>
+                    {/* Loading holati */}
+                    {isLoading && (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="flex-1 overflow-y-auto p-4">
-                        {cart.length === 0 ? (
-                            <div className="text-center text-gray-500 mt-8">
-                                <MdShoppingCart className="text-4xl mx-auto mb-2 text-gray-300" />
-                                <p>Karzina bo'sh</p>
+                    {/* Hech narsa topilmadi */}
+                    {searchKeyword.trim() &&
+                        !isLoading &&
+                        products.length === 0 && (
+                            <div className="text-center py-8">
+                                <p className="text-gray-500">
+                                    Mahsulotlar topilmadi
+                                </p>
+                                <p className="text-sm text-gray-400 mt-2">
+                                    "{searchKeyword}" bo'yicha hech narsa
+                                    topilmadi
+                                </p>
                             </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {cart.map((item) => (
-                                    <div
-                                        key={item.product_id}
-                                        className="bg-gray-50 rounded-lg p-3 flex items-center gap-3"
+                        )}
+
+                    {/* Pagination - faqat search natijalari uchun */}
+                    {isSearching && totalPages > 1 && (
+                        <div className="flex justify-center mt-6">
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setPage(page - 1)}
+                                    disabled={page === 1}
+                                    className={`px-3 py-2 rounded-lg ${
+                                        page === 1
+                                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                            : "bg-white border border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    Oldingi
+                                </button>
+
+                                {Array.from(
+                                    { length: totalPages },
+                                    (_, i) => i + 1
+                                ).map((pageNum) => (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setPage(pageNum)}
+                                        className={`px-3 py-2 rounded-lg ${
+                                            page === pageNum
+                                                ? "bg-blue-600 text-white"
+                                                : "bg-white border border-gray-300 hover:bg-gray-50"
+                                        }`}
                                     >
-                                        {/* Rasm */}
-                                        <div
-                                            className="w-[150px] h-[150px] bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0 cursor-pointer hover:shadow-md transition-shadow"
-                                            onClick={() => {
-                                                if (
-                                                    item.image_id &&
-                                                    imageUrls[item.image_id]
-                                                ) {
-                                                    handleImageClick(
-                                                        imageUrls[
-                                                            item.image_id
-                                                        ],
-                                                        item.product_name
-                                                    );
-                                                }
-                                            }}
-                                        >
-                                            {item.image_id &&
-                                            imageUrls[item.image_id] ? (
-                                                <img
-                                                    src={
-                                                        imageUrls[item.image_id]
-                                                    }
-                                                    alt={item.product_name}
-                                                    className="w-full h-full object-cover hover:scale-105 transition-transform"
-                                                />
-                                            ) : (
-                                                <div className="text-2xl text-gray-400">
-                                                    📦
-                                                </div>
-                                            )}
-                                        </div>
+                                        {pageNum}
+                                    </button>
+                                ))}
 
-                                        {/* Mahsulot ma'lumotlari */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <h4 className="font-medium text-sm text-gray-900 line-clamp-1">
-                                                    {item.product_name}
-                                                </h4>
-                                                <button
-                                                    onClick={() =>
-                                                        removeFromCart(
-                                                            item.product_id
-                                                        )
+                                <button
+                                    onClick={() => setPage(page + 1)}
+                                    disabled={page === totalPages}
+                                    className={`px-3 py-2 rounded-lg ${
+                                        page === totalPages
+                                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                            : "bg-white border border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    Keyingi
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Karzina ro'yxati - chap tomonda */}
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg mt-4">
+                        <div className="p-4 border-b border-gray-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <MdShoppingCart className="text-blue-600" />
+                                    Karzina
+                                </h2>
+                                <button
+                                    onClick={clearCart}
+                                    className="text-red-500 hover:text-red-700 text-sm"
+                                >
+                                    Tozalash
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 h-full">
+                            {cart.length === 0 ? (
+                                <div className="text-center text-gray-500 mt-8">
+                                    <MdShoppingCart className="text-4xl mx-auto mb-2 text-gray-300" />
+                                    <p>Karzina bo'sh</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {cart.map((item) => (
+                                        <div
+                                            key={item.product_id}
+                                            className="bg-gray-50 rounded-lg p-4 flex items-center gap-4"
+                                        >
+                                            {/* Rasm */}
+                                            <div
+                                                className="w-[200px] h-[150px] object-cover bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0 cursor-pointer hover:shadow-md transition-shadow"
+                                                onClick={() => {
+                                                    if (item.image_path) {
+                                                        handleImageClick(
+                                                            item.image_path,
+                                                            item.product_name
+                                                        );
                                                     }
-                                                    className="text-red-500 hover:text-red-700 p-1 ml-2 flex-shrink-0"
-                                                >
-                                                    <MdDelete className="text-lg" />
-                                                </button>
+                                                }}
+                                            >
+                                                {item.image_path ? (
+                                                    <img
+                                                        src={item.image_path}
+                                                        alt={item.product_name}
+                                                        className="w-full h-full object-cover hover:scale-105 transition-transform"
+                                                    />
+                                                ) : (
+                                                    <div className="text-2xl text-gray-400">
+                                                        📦
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {item.product_code && (
-                                                <p className="text-xs text-gray-500 mb-2">
-                                                    {item.product_code}
-                                                </p>
-                                            )}
-
-                                            {/* Narx va miqdor ma'lumotlari */}
-                                            <div className="space-y-2 mb-3">
-                                                {/* Sotish narxi - katta */}
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-600 font-medium">
-                                                        Sotish narxi ($):
-                                                    </span>
-                                                    <span className="text-lg font-bold text-green-600">
-                                                        {item.selling_price ||
-                                                            0}{" "}
-                                                        $
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-600 font-medium">
-                                                        Sotish narxi (so'm):
-                                                    </span>
-                                                    <span className="text-lg font-bold text-blue-600">
-                                                        {formatNumber(
-                                                            convertUsdToUzs(
-                                                                item.selling_price
+                                            {/* Mahsulot ma'lumotlari */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-semibold text-base text-gray-900 line-clamp-2">
+                                                        {item.product_name}
+                                                    </h4>
+                                                    <button
+                                                        onClick={() =>
+                                                            removeFromCart(
+                                                                item.product_id
                                                             )
-                                                        )}
-                                                        so'm
-                                                    </span>
+                                                        }
+                                                        className="text-red-500 hover:text-red-700 p-2 ml-2 flex-shrink-0"
+                                                    >
+                                                        <MdDelete className="text-lg" />
+                                                    </button>
                                                 </div>
 
-                                                {/* Kichik ma'lumotlar */}
-                                                <div className="flex justify-between text-xs text-gray-500">
-                                                    <div>
-                                                        <span>
-                                                            Sotib olingan:{" "}
-                                                            {item.last_receipt_price ||
-                                                                0}{" "}
-                                                            {item.cash_type_text ||
-                                                                "so'm"}
+                                                {/* Narx ma'lumotlari */}
+                                                <div className="mb-3 space-y-1">
+                                                    {/* Sotish narxi */}
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-gray-600">
+                                                            Sotish narxi:
                                                         </span>
-                                                        {item.cash_type === 1 &&
-                                                            item.last_receipt_price &&
-                                                            item.last_receipt_price >
-                                                                0 && (
-                                                                <p className="text-xs text-green-600 mt-1">
+                                                        <div className="text-right">
+                                                            <span className="font-semibold text-green-600">
+                                                                {
+                                                                    item.selling_price
+                                                                }{" "}
+                                                                $
+                                                            </span>
+                                                            <p className="text-xs text-gray-500">
+                                                                {formatNumber(
+                                                                    convertUsdToUzs(
+                                                                        item.selling_price
+                                                                    )
+                                                                )}{" "}
+                                                                so'm
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Olingan narx */}
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-gray-600">
+                                                            Olingan narx:
+                                                        </span>
+                                                        <div className="text-right">
+                                                            <span className="font-semibold text-blue-600">
+                                                                {
+                                                                    item.last_receipt_price
+                                                                }{" "}
+                                                                {
+                                                                    item.cash_type_text
+                                                                }
+                                                            </span>
+                                                            {item.cash_type ===
+                                                                1 && (
+                                                                <p className="text-xs text-gray-500">
                                                                     ≈{" "}
                                                                     {formatUsd(
                                                                         convertUzsToUsd(
                                                                             item.last_receipt_price
                                                                         )
-                                                                    )}
+                                                                    )}{" "}
+                                                                    $
                                                                 </p>
                                                             )}
+                                                        </div>
                                                     </div>
-                                                    <span>
-                                                        Qolgan:{" "}
-                                                        {item.total_amount} dona
-                                                    </span>
                                                 </div>
-                                            </div>
 
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() =>
-                                                            updateQuantity(
-                                                                item.product_id,
-                                                                item.quantity -
-                                                                    1
-                                                            )
-                                                        }
-                                                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
-                                                    >
-                                                        <MdRemove className="text-sm" />
-                                                    </button>
-                                                    <span className="text-sm font-medium w-8 text-center">
-                                                        {item?.quantity}
-                                                    </span>
-                                                    <button
-                                                        onClick={() =>
-                                                            updateQuantity(
-                                                                item?.product_id,
-                                                                item?.quantity +
-                                                                    1
-                                                            )
-                                                        }
-                                                        className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
-                                                    >
-                                                        <MdAdd className="text-sm" />
-                                                    </button>
-                                                </div>
-                                                <div className="flex flex-col items-end">
-                                                    {" "}
-                                                    <span className="text-md font-semibold text-blue-600">
-                                                        {item?.total || 0} $
-                                                    </span>
-                                                    <span className="text-lg font-semibold text-blue-600">
-                                                        {formatNumber(
-                                                            convertUsdToUzs(
-                                                                item?.total || 0
-                                                            )
-                                                        )}{" "}
-                                                        so'm
-                                                    </span>
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            onClick={() =>
+                                                                updateQuantity(
+                                                                    item.product_id,
+                                                                    item.quantity -
+                                                                        1
+                                                                )
+                                                            }
+                                                            className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
+                                                        >
+                                                            <MdRemove className="text-sm" />
+                                                        </button>
+                                                        <span className="text-base font-medium w-8 text-center">
+                                                            {item?.quantity}
+                                                        </span>
+                                                        <button
+                                                            onClick={() =>
+                                                                updateQuantity(
+                                                                    item?.product_id,
+                                                                    item?.quantity +
+                                                                        1
+                                                                )
+                                                            }
+                                                            className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
+                                                        >
+                                                            <MdAdd className="text-sm" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-base font-semibold text-blue-600">
+                                                            {item?.total || 0} $
+                                                        </span>
+                                                        <p className="text-sm text-gray-500">
+                                                            {formatNumber(
+                                                                convertUsdToUzs(
+                                                                    item?.total ||
+                                                                        0
+                                                                )
+                                                            )}{" "}
+                                                            so'm
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {cart.length > 0 && (
-                        <div className="p-4 border-t border-gray-200 flex-shrink-0">
-                            <button
-                                onClick={handleCheckout}
-                                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                            >
-                                Sotishni yakunlash
-                            </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Mahsulot qidirish yo'riqnomasi */}
+                {/* Right Side - Checkout Form (30%) */}
+                <div className="w-[30%] px-6 py-4 overflow-y-auto bg-gray-50">
+                    {/* Checkout Form */}
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-6">
+                        {/* Karzina ma'lumotlari */}
+                        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                            <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <MdShoppingCart className="text-blue-600" />
+                                Karzina ma'lumotlari
+                            </h4>
 
-                {/* Loading holati */}
-                {isLoading && (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                )}
-
-                {/* Hech narsa topilmadi */}
-                {searchKeyword.trim() &&
-                    !isLoading &&
-                    products.length === 0 && (
-                        <div className="text-center py-8">
-                            <p className="text-gray-500">
-                                Mahsulotlar topilmadi
-                            </p>
-                            <p className="text-sm text-gray-400 mt-2">
-                                "{searchKeyword}" bo'yicha hech narsa topilmadi
-                            </p>
-                        </div>
-                    )}
-
-                {/* Pagination - faqat search natijalari uchun */}
-                {isSearching && totalPages > 1 && (
-                    <div className="flex justify-center mt-6">
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setPage(page - 1)}
-                                disabled={page === 1}
-                                className={`px-3 py-2 rounded-lg ${
-                                    page === 1
-                                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                        : "bg-white border border-gray-300 hover:bg-gray-50"
-                                }`}
-                            >
-                                Oldingi
-                            </button>
-
-                            {Array.from(
-                                { length: totalPages },
-                                (_, i) => i + 1
-                            ).map((pageNum) => (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setPage(pageNum)}
-                                    className={`px-3 py-2 rounded-lg ${
-                                        page === pageNum
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-white border border-gray-300 hover:bg-gray-50"
-                                    }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            ))}
-
-                            <button
-                                onClick={() => setPage(page + 1)}
-                                disabled={page === totalPages}
-                                className={`px-3 py-2 rounded-lg ${
-                                    page === totalPages
-                                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                        : "bg-white border border-gray-300 hover:bg-gray-50"
-                                }`}
-                            >
-                                Keyingi
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Checkout Modal */}
-            <Modal
-                isOpen={isCheckoutModalOpen}
-                onClose={handleCloseCheckoutModal}
-            >
-                <div className="p-6 space-y-6">
-                    {/* Karzina ma'lumotlari */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                        <h3 className="font-semibold text-gray-900 mb-3">
-                            Karzina ma'lumotlari
-                        </h3>
-                        <div className="space-y-2">
-                            <div className="flex justify-between">
-                                <span>Mahsulotlar soni:</span>
-                                <span className="font-semibold">
-                                    {getTotalItems()} dona
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Jami summa:</span>
-                                <div className="text-right">
-                                    <span className="font-semibold text-blue-600">
-                                        {getTotalAmount()} $
+                            <div className="space-y-3">
+                                <div className="flex justify-between text-sm">
+                                    <span>Mahsulotlar:</span>
+                                    <span className="font-semibold">
+                                        {getTotalItems()}
                                     </span>
-                                    {getTotalAmount() > 0 && (
-                                        <p className="text-sm text-gray-500 mt-1">
+                                </div>
+
+                                <div className="flex justify-between text-lg font-bold">
+                                    <span>Jami:</span>
+                                    <div className="text-right">
+                                        <span className="text-blue-600">
+                                            {getTotalAmount()} $
+                                        </span>
+                                        <p className="text-sm text-gray-500">
                                             ≈{" "}
                                             {formatNumber(
                                                 convertUsdToUzs(
                                                     getTotalAmount()
                                                 )
-                                            )}
+                                            )}{" "}
                                             so'm
                                         </p>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
-                            {discount && parseFloat(discount) > 0 && (
-                                <>
-                                    <div className="flex justify-between text-red-600">
-                                        <span>Chegirma:</span>
-                                        <div className="text-right">
-                                            <span className="font-semibold">
-                                                -
-                                                {formatNumber(
-                                                    parseFloat(discount)
-                                                )}{" "}
-                                                so'm
-                                            </span>
-                                            {parseFloat(discount) > 0 && (
-                                                <p className="text-sm text-gray-500 mt-1">
+
+                                {discount && parseFloat(discount) > 0 && (
+                                    <>
+                                        <div className="flex justify-between text-red-600">
+                                            <span>Chegirma:</span>
+                                            <div className="text-right">
+                                                <span className="font-semibold">
+                                                    -
+                                                    {formatNumber(
+                                                        parseFloat(discount)
+                                                    )}{" "}
+                                                    so'm
+                                                </span>
+                                                <p className="text-sm text-gray-500">
                                                     ≈ -
                                                     {formatUsd(
                                                         convertUzsToUsd(
@@ -1150,22 +1085,21 @@ const POSPage: React.FC = () => {
                                                         )
                                                     )}
                                                 </p>
-                                            )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex justify-between text-green-600 border-t pt-2">
-                                        <span className="font-bold">
-                                            To'lanadigan summa:
-                                        </span>
-                                        <div className="text-right">
-                                            <span className="font-bold text-lg">
-                                                {formatNumber(
-                                                    getTotalWithDiscount()
-                                                )}{" "}
-                                                so'm
+
+                                        <div className="flex justify-between text-green-600 border-t pt-2">
+                                            <span className="font-bold">
+                                                To'lanadigan:
                                             </span>
-                                            {getTotalWithDiscount() > 0 && (
-                                                <p className="text-sm text-gray-500 mt-1">
+                                            <div className="text-right">
+                                                <span className="font-bold text-lg">
+                                                    {formatNumber(
+                                                        getTotalWithDiscount()
+                                                    )}{" "}
+                                                    so'm
+                                                </span>
+                                                <p className="text-sm text-gray-500">
                                                     ≈{" "}
                                                     {formatUsd(
                                                         convertUzsToUsd(
@@ -1173,129 +1107,135 @@ const POSPage: React.FC = () => {
                                                         )
                                                     )}
                                                 </p>
-                                            )}
+                                            </div>
                                         </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Qarz checkbox */}
-                    <div className="flex items-center space-x-3">
-                        <input
-                            type="checkbox"
-                            id="isDebt"
-                            checked={isDebt}
-                            onChange={(e) => handleDebtChange(e.target.checked)}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <label
-                            htmlFor="isDebt"
-                            className="text-sm font-medium text-gray-900"
-                        >
-                            Qarzga sotish
-                        </label>
-                    </div>
-
-                    {/* Qarz bo'lsa mijoz tanlash */}
-                    {isDebt && (
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Mijozni tanlang *
-                                </label>
-                                <Select
-                                    defaultValue={
-                                        selectedClient?.client_id?.toString() ||
-                                        ""
-                                    }
-                                    onChange={(value: string) => {
-                                        const clientId = parseInt(value);
-                                        const client = clients.find(
-                                            (c) => c.client_id === clientId
-                                        );
-                                        setSelectedClient(client || null);
-                                    }}
-                                    options={clients.map((client) => ({
-                                        value: client.client_id,
-                                        label: `${client.client_name} ${
-                                            client.phone
-                                                ? `(${client.phone})`
-                                                : ""
-                                        } ${
-                                            client.debt && client.debt > 0
-                                                ? `- Mavjud qarz: ${formatNumber(
-                                                      client.debt
-                                                  )} so'm`
-                                                : ""
-                                        }`,
-                                    }))}
-                                    placeholder="Mijozni tanlang"
-                                    searchable={true}
-                                    onSearch={searchClients}
-                                />
+                                    </>
+                                )}
                             </div>
                         </div>
-                    )}
 
-                    {/* Izoh */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Izoh (ixtiyoriy)
-                        </label>
-                        <textarea
-                            value={comments}
-                            onChange={(e) => setComments(e.target.value)}
-                            placeholder="Sotish haqida izoh..."
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                        {/* Checkout Form */}
+                        <div className="space-y-4">
+                            {/* Chegirma */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Chegirma (so'm) (ixtiyoriy)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={discount}
+                                    onChange={(e) =>
+                                        setDiscount(e.target.value)
+                                    }
+                                    placeholder="Chegirma summasini kiriting"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            {/* Qarz checkbox */}
+                            <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-3">
+                                <input
+                                    type="checkbox"
+                                    id="isDebt"
+                                    checked={isDebt}
+                                    onChange={(e) =>
+                                        handleDebtChange(e.target.checked)
+                                    }
+                                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                />
+                                <label
+                                    htmlFor="isDebt"
+                                    className="text-sm font-medium text-gray-700 cursor-pointer"
+                                >
+                                    Qarzga sotish
+                                </label>
+                            </div>
 
-                    {/* Chegirma */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Chegirma (so'm) (ixtiyoriy)
-                        </label>
-                        <input
-                            type="number"
-                            value={discount}
-                            onChange={(e) => setDiscount(e.target.value)}
-                            placeholder="Chegirma summasini kiriting"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-
-                    {/* Modal Footer */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                        <button
-                            onClick={handleCloseCheckoutModal}
-                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                        >
-                            Bekor qilish
-                        </button>
-                        <button
-                            onClick={handleSubmitSale}
-                            disabled={isSubmitting}
-                            className={`px-6 py-2 text-white rounded-md transition-colors ${
-                                isSubmitting
-                                    ? "bg-blue-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
-                            }`}
-                        >
-                            {isSubmitting ? (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Yakunlanmoqda...
+                            {/* Qarz bo'lsa mijoz tanlash */}
+                            {isDebt && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Mijozni tanlang *
+                                    </label>
+                                    <Select
+                                        defaultValue={
+                                            selectedClient?.client_id?.toString() ||
+                                            ""
+                                        }
+                                        onChange={(value: string) => {
+                                            const clientId = parseInt(value);
+                                            const client = clients.find(
+                                                (c) => c.client_id === clientId
+                                            );
+                                            setSelectedClient(client || null);
+                                        }}
+                                        options={clients.map((client) => ({
+                                            value: client.client_id,
+                                            label: `${client.client_name} ${
+                                                client.phone
+                                                    ? `(${client.phone})`
+                                                    : ""
+                                            } ${
+                                                client.debt && client.debt > 0
+                                                    ? `- Mavjud qarz: ${formatNumber(
+                                                          client.debt
+                                                      )} so'm`
+                                                    : ""
+                                            }`,
+                                        }))}
+                                        placeholder="Mijozni tanlang"
+                                        searchable={true}
+                                        onSearch={searchClients}
+                                    />
                                 </div>
-                            ) : (
-                                "Sotishni yakunlash"
                             )}
-                        </button>
+
+                            {/* Izoh */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Izoh (ixtiyoriy)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={comments}
+                                    onChange={(e) =>
+                                        setComments(e.target.value)
+                                    }
+                                    placeholder="Sotish haqida izoh..."
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            {/* Sotishni yakunlash tugmalari */}
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={clearCart}
+                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                                >
+                                    Bekor qilish
+                                </button>
+                                <button
+                                    onClick={handleSubmitSale}
+                                    disabled={isSubmitting || cart.length === 0}
+                                    className={`flex-1 px-4 py-2 text-white rounded-md transition-colors ${
+                                        isSubmitting || cart.length === 0
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : "bg-blue-600 hover:bg-blue-700"
+                                    }`}
+                                >
+                                    {isSubmitting ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Yakunlanmoqda...
+                                        </div>
+                                    ) : (
+                                        "Sotishni yakunlash"
+                                    )}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </Modal>
+            </div>
 
             {/* Dollar Rate Modal */}
             <DollarRateModal

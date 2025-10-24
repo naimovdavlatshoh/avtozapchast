@@ -16,6 +16,8 @@ interface Product {
     product_id: number;
     product_name: string;
     barcode?: string | number;
+    product_code?: string;
+    image_path: string;
 }
 
 interface ArrivalItem {
@@ -392,18 +394,39 @@ export default function AddArrivalModal({
                                                         index
                                                     )
                                                 }
+                                                // @ts-ignore
                                                 options={products.map(
                                                     (product) => ({
                                                         value: product.product_id,
-                                                        label: `${
-                                                            product.product_name
-                                                        }${
-                                                            product.barcode
-                                                                ? ` — ${String(
-                                                                      product.barcode
-                                                                  )}`
-                                                                : ""
-                                                        }`,
+                                                        label: (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                                    {product.image_path ? (
+                                                                        <img
+                                                                            src={
+                                                                                product.image_path
+                                                                            }
+                                                                            alt={
+                                                                                product.product_name
+                                                                            }
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <span className="text-xs">
+                                                                            📦
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm">
+                                                                    {
+                                                                        product.product_name
+                                                                    }
+                                                                    {product.product_code
+                                                                        ? ` - ${product.product_code}`
+                                                                        : ` - ${product.barcode}:`}
+                                                                </span>
+                                                            </div>
+                                                        ),
                                                     })
                                                 )}
                                                 placeholder="Tanlang"

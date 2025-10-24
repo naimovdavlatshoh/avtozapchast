@@ -121,6 +121,10 @@ const CheckPage: React.FC = () => {
                         <span className="font-bold">Дата:</span>
                         <span className="font-bold">{saleData.timestamp}</span>
                     </div>
+                    <div className="flex text-xs justify-between">
+                        <span className="font-bold">Телефон:</span>
+                        <span className="font-bold">+998 91 404 79 97</span>
+                    </div>
 
                     {/* Qarz ma'lumotlari */}
                     {saleData.isDebt && saleData.selectedClient && (

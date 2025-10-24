@@ -5,7 +5,7 @@ import { handleAuthError } from "../utils/authUtils";
 export const BASE_URL =
     import.meta.env.VITE_BASE_URL || "https://apistore.afandicloud.uz/";
 
-// Block requests to avtozapchast.netlify.app
+
 axios.interceptors.request.use(
     (config) => {
         if (config.url?.includes("avtozapchast.netlify.app")) {
