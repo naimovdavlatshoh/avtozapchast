@@ -191,9 +191,10 @@ const POSPage: React.FC = () => {
     }, [page, isSearching, searchKeyword]);
 
     const handleSearch = async () => {
-        if (!searchKeyword.trim()) {
+        if (!searchKeyword.trim() || searchKeyword.trim().length < 3) {
             setIsSearching(false);
             setPage(1);
+            setProducts([]);
             return;
         }
 
@@ -210,15 +211,13 @@ const POSPage: React.FC = () => {
             console.log("Response result:", response?.data?.result);
             console.log("Products count:", response?.data?.result?.length);
             if (response?.data?.result) {
+                setIsLoading(false);
                 console.log("Search response:", response.data.result);
                 setProducts(response.data.result);
                 setTotalPages(1);
             }
-        } catch (error) {
-            console.error("Qidiruvda xatolik:", error);
-            toast.error("Qidiruvda xatolik");
-        } finally {
-            setIsLoading(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Qidiruvda xatolik");
         }
     };
 
@@ -230,6 +229,11 @@ const POSPage: React.FC = () => {
         } else if (value.trim().length === 0) {
             setIsSearching(false);
             setPage(1);
+            setProducts([]);
+        } else if (value.trim().length < 3) {
+            setIsSearching(false);
+            setPage(1);
+            setProducts([]);
         }
     };
 
@@ -355,6 +359,8 @@ const POSPage: React.FC = () => {
 
     const clearCart = () => {
         setCart([]);
+        setDiscount("");
+        setComments("");
         localStorage.removeItem("pos_cart");
         toast.success("Karzina tozalandi");
     };
@@ -616,7 +622,7 @@ const POSPage: React.FC = () => {
                                         setProducts([]);
                                         setIsSearching(false);
                                     }}
-                                    className={`flex items-center p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                                    className={`flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
                                         product?.selling_price &&
                                         product.selling_price > 0
                                             ? "cursor-pointer"
@@ -624,7 +630,7 @@ const POSPage: React.FC = () => {
                                     }`}
                                 >
                                     {/* Rasm */}
-                                    <div className="w-40 h-40 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
+                                    <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
                                         {product.image_path ? (
                                             <img
                                                 src={product.image_path}
@@ -653,41 +659,35 @@ const POSPage: React.FC = () => {
                                     {/* Ma'lumotlar */}
                                     <div className="flex w-full justify-between items-center">
                                         <div className="ml-6 ">
-                                            <h4 className="font-bold text-gray-900 text-2xl mb-3 line-clamp-1">
+                                            <h4 className="font-bold text-gray-900 text-lg line-clamp-1">
                                                 {product?.product_name ||
                                                     "Nomsiz mahsulot"}
                                             </h4>
 
                                             {/* Product Code */}
                                             {product?.product_code && (
-                                                <p className="text-lg text-blue-600 font-semibold mb-2">
+                                                <p className="text-md text-blue-600 font-semibold mb-1">
                                                     Kodi: {product.product_code}
                                                 </p>
                                             )}
 
                                             {/* Barcode */}
                                             {product?.barcode && (
-                                                <p className="text-lg text-gray-700 mb-2">
+                                                <p className="text-md text-gray-700 mb-2">
                                                     Barcode: {product.barcode}
                                                 </p>
                                             )}
 
-                                            {/* Description */}
-                                            <p className="text-lg text-gray-600 mb-4 line-clamp-2">
-                                                {product?.description ||
-                                                    "Tavsif yo'q"}
-                                            </p>
-
                                             {/* Prices and Amount */}
                                         </div>
-                                        <div className="space-y-3 ">
+                                        <div className="space-y-1 ">
                                             <div className="flex items-center justify-between gap-3">
-                                                <span className="text-lg text-gray-700 font-semibold">
+                                                <span className="text-sm text-gray-700 font-semibold">
                                                     Sotish narxi ($):
                                                 </span>
 
                                                 <p
-                                                    className={`text-xl font-bold ${
+                                                    className={`text-md font-bold ${
                                                         product?.selling_price &&
                                                         product.selling_price >
                                                             0
@@ -702,11 +702,11 @@ const POSPage: React.FC = () => {
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between gap-3">
-                                                <span className="text-lg text-gray-700 font-semibold">
+                                                <span className="text-sm text-gray-700 font-semibold">
                                                     Sotish narxi (so'm):
                                                 </span>
 
-                                                <p className="text-blue-600 text-xl font-bold">
+                                                <p className="text-blue-600 text-md font-bold">
                                                     {formatNumber(
                                                         convertUsdToUzs(
                                                             product.selling_price
@@ -716,11 +716,11 @@ const POSPage: React.FC = () => {
                                             </div>
 
                                             <div className="flex items-center justify-between">
-                                                <span className="text-lg text-gray-700 font-semibold">
+                                                <span className="text-sm text-gray-700 font-semibold">
                                                     Oxirgi kirim narxi:
                                                 </span>
                                                 <div className="text-right">
-                                                    <p className="text-xl text-gray-800 font-semibold">
+                                                    <p className="text-md text-gray-800 font-semibold">
                                                         {product?.last_receipt_price
                                                             ? `${
                                                                   product.last_receipt_price
@@ -758,10 +758,10 @@ const POSPage: React.FC = () => {
                                             )}
 
                                             <div className="flex items-center justify-between">
-                                                <span className="text-lg text-gray-700 font-semibold">
+                                                <span className="text-xs text-gray-700 font-semibold">
                                                     Qolgan miqdor:
                                                 </span>
-                                                <p className="text-xl text-gray-800 font-semibold">
+                                                <p className="text-xs text-gray-800 font-semibold">
                                                     {product?.total_amount
                                                         ? `${product?.total_amount} dona`
                                                         : "Mahsulot yo'q"}
@@ -878,7 +878,7 @@ const POSPage: React.FC = () => {
                                         >
                                             {/* Rasm */}
                                             <div
-                                                className="w-[200px] h-[150px] object-cover bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0 cursor-pointer hover:shadow-md transition-shadow"
+                                                className="w-[100px] h-[100px] object-cover bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0 cursor-pointer hover:shadow-md transition-shadow"
                                                 onClick={() => {
                                                     if (item.image_path) {
                                                         handleImageClick(
@@ -903,7 +903,7 @@ const POSPage: React.FC = () => {
 
                                             {/* Mahsulot ma'lumotlari */}
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-start mb-2">
+                                                <div className="flex justify-between items-start">
                                                     <h4 className="font-semibold text-base text-gray-900 line-clamp-2">
                                                         {item.product_name}
                                                     </h4>
@@ -920,9 +920,9 @@ const POSPage: React.FC = () => {
                                                 </div>
 
                                                 {/* Narx ma'lumotlari */}
-                                                <div className="mb-3 space-y-1">
+                                                <div className=" space-y-1">
                                                     {/* Sotish narxi */}
-                                                    <div className="flex justify-between text-sm">
+                                                    <div className="flex justify-between items-center text-sm">
                                                         <span className="text-gray-600">
                                                             Sotish narxi:
                                                         </span>
@@ -930,16 +930,29 @@ const POSPage: React.FC = () => {
                                                             <span className="font-semibold text-green-600">
                                                                 {
                                                                     item.selling_price
-                                                                }{" "}
-                                                                $
+                                                                }
+                                                                ${"   "}
+                                                                <span className=" font-semibold text-blue-600">
+                                                                    (
+                                                                    {item?.total ||
+                                                                        0}
+                                                                    $)
+                                                                </span>
                                                             </span>
                                                             <p className="text-xs text-gray-500">
                                                                 {formatNumber(
                                                                     convertUsdToUzs(
                                                                         item.selling_price
                                                                     )
-                                                                )}{" "}
-                                                                so'm
+                                                                )}
+                                                                so'm (
+                                                                {formatNumber(
+                                                                    convertUsdToUzs(
+                                                                        item?.total ||
+                                                                            0
+                                                                    )
+                                                                )}
+                                                                so'm)
                                                             </p>
                                                         </div>
                                                     </div>
@@ -973,52 +986,34 @@ const POSPage: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <button
+                                                    onClick={() =>
+                                                        updateQuantity(
+                                                            item?.product_id,
+                                                            item?.quantity + 1
+                                                        )
+                                                    }
+                                                    className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
+                                                >
+                                                    <MdAdd className="text-sm" />
+                                                </button>
+                                                <span className="text-base font-medium w-8 text-center">
+                                                    {item?.quantity}
+                                                </span>
 
-                                                <div className="flex justify-between items-center">
-                                                    <div className="flex items-center gap-3">
-                                                        <button
-                                                            onClick={() =>
-                                                                updateQuantity(
-                                                                    item.product_id,
-                                                                    item.quantity -
-                                                                        1
-                                                                )
-                                                            }
-                                                            className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
-                                                        >
-                                                            <MdRemove className="text-sm" />
-                                                        </button>
-                                                        <span className="text-base font-medium w-8 text-center">
-                                                            {item?.quantity}
-                                                        </span>
-                                                        <button
-                                                            onClick={() =>
-                                                                updateQuantity(
-                                                                    item?.product_id,
-                                                                    item?.quantity +
-                                                                        1
-                                                                )
-                                                            }
-                                                            className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
-                                                        >
-                                                            <MdAdd className="text-sm" />
-                                                        </button>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="text-base font-semibold text-blue-600">
-                                                            {item?.total || 0} $
-                                                        </span>
-                                                        <p className="text-sm text-gray-500">
-                                                            {formatNumber(
-                                                                convertUsdToUzs(
-                                                                    item?.total ||
-                                                                        0
-                                                                )
-                                                            )}{" "}
-                                                            so'm
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                                <button
+                                                    onClick={() =>
+                                                        updateQuantity(
+                                                            item.product_id,
+                                                            item.quantity - 1
+                                                        )
+                                                    }
+                                                    className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300"
+                                                >
+                                                    <MdRemove className="text-sm" />
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
