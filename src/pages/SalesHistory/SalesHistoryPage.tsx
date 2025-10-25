@@ -17,6 +17,7 @@ interface SaleItem {
     barcode: number;
     product_code: string;
     created_at: string;
+    selling_price: number;
 }
 
 interface Sale {
@@ -116,11 +117,11 @@ const SalesHistoryPage: React.FC = () => {
                 product_id: item.product_id,
                 product_name: item.product_name,
                 product_code: item.product_code,
-                selling_price: 0, // Bu ma'lumot API dan kelmaydi
+                selling_price: item.selling_price, // Use actual selling price from API
                 last_receipt_price: 0,
                 total_amount: item.amount,
                 quantity: item.amount,
-                total: 0, // Bu ma'lumot API dan kelmaydi
+                total: item.selling_price * item.amount, // Calculate total correctly
                 image_id: undefined,
             })),
             isDebt: sale.is_debt === 1,
@@ -138,7 +139,7 @@ const SalesHistoryPage: React.FC = () => {
         };
 
         // Check sahifasini yangi oynada ochish
-        const checkUrl = `/#/check?saleData=${encodeURIComponent(
+        const checkUrl = `/#/check-sale-history?saleData=${encodeURIComponent(
             JSON.stringify(saleData)
         )}`;
         window.open(checkUrl, "_blank");

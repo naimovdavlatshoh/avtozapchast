@@ -61,6 +61,7 @@ interface CartItem {
 interface Client {
     client_id: number;
     client_name: string;
+    car_number?: string;
     phone?: string;
     address?: string;
     debt?: number;
@@ -1175,8 +1176,8 @@ const POSPage: React.FC = () => {
                                         options={clients.map((client) => ({
                                             value: client.client_id,
                                             label: `${client.client_name} ${
-                                                client.phone
-                                                    ? `(${client.phone})`
+                                                client?.car_number
+                                                    ? `(${client.car_number})`
                                                     : ""
                                             } ${
                                                 client.debt && client.debt > 0

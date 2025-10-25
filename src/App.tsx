@@ -26,6 +26,8 @@ import ProductList from "./pages/Products/ProductList";
 import ArrivalList from "./pages/Arrivals/ArrivalList";
 import POSPage from "./pages/POS/POSPage";
 import CheckPage from "./pages/Check/CheckPage";
+import CheckDebtorDetail from "./pages/Check/checkdebtordetail";
+import CheckSaleHistory from "./pages/Check/Checksalehistory";
 import SalesHistoryPage from "./pages/SalesHistory/SalesHistoryPage";
 import SaleDetailsPage from "./pages/SalesHistory/SaleDetailsPage";
 import DebtorsPage from "./pages/Debtors/DebtorsPage";
@@ -156,8 +158,28 @@ export default function App() {
                         <Route
                             path="/check"
                             element={
-                                <RoleBasedRoute allowedRoles={[2]}>
+                                <RoleBasedRoute allowedRoles={[1, 2]}>
                                     <CheckPage />
+                                </RoleBasedRoute>
+                            }
+                        />
+
+                        {/* Check debtor detail sahifasi */}
+                        <Route
+                            path="/check-debtor-detail"
+                            element={
+                                <RoleBasedRoute allowedRoles={[1, 2]}>
+                                    <CheckDebtorDetail />
+                                </RoleBasedRoute>
+                            }
+                        />
+
+                        {/* Check sale history sahifasi */}
+                        <Route
+                            path="/check-sale-history"
+                            element={
+                                <RoleBasedRoute allowedRoles={[1, 2]}>
+                                    <CheckSaleHistory />
                                 </RoleBasedRoute>
                             }
                         />

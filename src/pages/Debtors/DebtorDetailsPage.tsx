@@ -14,6 +14,7 @@ interface SaleItem {
     amount: number;
     barcode: number;
     product_code: string;
+    selling_price: number;
     created_at: string;
 }
 
@@ -260,6 +261,42 @@ const DebtorDetailsPage: React.FC = () => {
     const handleCloseItemsModal = () => {
         setIsItemsModalOpen(false);
         setSelectedSale(null);
+    };
+
+    // Print check function - same as SalesHistoryPage
+    const handlePrintCheck = (sale: Sale) => {
+        // Sale ma'lumotlarini check formatiga aylantirish
+        const saleData = {
+            cart: sale.items.map((item) => ({
+                product_id: item.product_id,
+                product_name: item.product_name,
+                product_code: item.product_code,
+                selling_price: item.selling_price, // Use actual selling price from API
+                last_receipt_price: 0,
+                total_amount: item.amount,
+                quantity: item.amount,
+                total: item.selling_price * item.amount, // Calculate total correctly
+                image_id: undefined,
+            })),
+            isDebt: true,
+            selectedClient: {
+                client_id: debtor?.client_id,
+                client_name: debtorName,
+            },
+            debtAmount: sale.total_price_with_discount.toString(),
+            comments: "",
+            discount: sale.discount.toString(),
+            totalAmount: sale.total_price_with_discount,
+            totalItems: sale.items.length,
+            saleId: sale.sale_id,
+            timestamp: formatDate(sale.created_at),
+        };
+
+        // Check sahifasini yangi oynada ochish
+        const checkUrl = `/#/check-debtor-detail?saleData=${encodeURIComponent(
+            JSON.stringify(saleData)
+        )}`;
+        window.open(checkUrl, "_blank");
     };
 
     if (loading) {
@@ -555,16 +592,39 @@ const DebtorDetailsPage: React.FC = () => {
                                             {formatDate(sale.created_at)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button
-                                                onClick={() =>
-                                                    handleViewItems(sale)
-                                                }
-                                                className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
-                                                title="Mahsulotlarni ko'rish"
-                                            >
-                                                <MdVisibility className="w-3 h-3" />
-                                                Mahsulotlar
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() =>
+                                                        handleViewItems(sale)
+                                                    }
+                                                    className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                                                    title="Mahsulotlarni ko'rish"
+                                                >
+                                                    <MdVisibility className="w-3 h-3" />
+                                                    Mahsulotlar
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handlePrintCheck(sale)
+                                                    }
+                                                    className="inline-flex items-center gap-2 px-2 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+                                                    title="Chekni chop etish"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
