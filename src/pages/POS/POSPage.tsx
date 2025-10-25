@@ -968,9 +968,8 @@ const POSPage: React.FC = () => {
                                                     </div>
 
                                                     {/* Olingan narx */}
-                                                    <div className="flex justify-between text-sm">
+                                                    <div className="flex justify-between items-center text-sm">
                                                         <span className="text-gray-600">
-                                                            Olingan narx:{" "}
                                                             <span className="text-green-600">
                                                                 (
                                                                 {
@@ -978,6 +977,8 @@ const POSPage: React.FC = () => {
                                                                 }{" "}
                                                                 dona qolgan)
                                                             </span>
+                                                            <br />
+                                                            Olingan narx:{" "}
                                                         </span>
                                                         <div className="text-right">
                                                             <span className="font-semibold text-blue-600">
