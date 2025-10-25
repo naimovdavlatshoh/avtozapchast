@@ -932,12 +932,15 @@ const POSPage: React.FC = () => {
                                                                     item.selling_price
                                                                 }
                                                                 ${"   "}
-                                                                <span className=" font-semibold text-blue-600">
-                                                                    (
-                                                                    {item?.total ||
-                                                                        0}
-                                                                    $)
-                                                                </span>
+                                                                {item.quantity >
+                                                                    1 && (
+                                                                    <span className=" font-semibold text-blue-600">
+                                                                        (
+                                                                        {item?.total ||
+                                                                            0}
+                                                                        $)
+                                                                    </span>
+                                                                )}
                                                             </span>
                                                             <p className="text-xs text-gray-500">
                                                                 {formatNumber(
@@ -945,14 +948,20 @@ const POSPage: React.FC = () => {
                                                                         item.selling_price
                                                                     )
                                                                 )}
-                                                                so'm (
-                                                                {formatNumber(
-                                                                    convertUsdToUzs(
-                                                                        item?.total ||
-                                                                            0
-                                                                    )
+                                                                so'm{" "}
+                                                                {item.quantity >
+                                                                    1 && (
+                                                                    <span>
+                                                                        (
+                                                                        {formatNumber(
+                                                                            convertUsdToUzs(
+                                                                                item?.total ||
+                                                                                    0
+                                                                            )
+                                                                        )}
+                                                                        so'm)
+                                                                    </span>
                                                                 )}
-                                                                so'm)
                                                             </p>
                                                         </div>
                                                     </div>
