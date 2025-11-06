@@ -81,6 +81,12 @@ const navItems: NavItem[] = [
         path: "/debtors",
         roles: [1, 2], // Admin va Director
     },
+    {
+        name: "Vaqtincha qarzdorlik",
+        icon: <GrMoney />,
+        path: "/daily-debts",
+        roles: [1, 2],
+    },
 
     // {
     //     name: "Выдача",

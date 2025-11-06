@@ -28,10 +28,15 @@ import POSPage from "./pages/POS/POSPage";
 import CheckPage from "./pages/Check/CheckPage";
 import CheckDebtorDetail from "./pages/Check/checkdebtordetail";
 import CheckSaleHistory from "./pages/Check/Checksalehistory";
+import CheckDailyDebt from "./pages/Check/CheckDailyDebt";
 import SalesHistoryPage from "./pages/SalesHistory/SalesHistoryPage";
 import SaleDetailsPage from "./pages/SalesHistory/SaleDetailsPage";
 import DebtorsPage from "./pages/Debtors/DebtorsPage";
 import DebtorDetailsPage from "./pages/Debtors/DebtorDetailsPage";
+import AddItemsToDailyDebtPage from "./pages/DailyDebts/AddItemsToDailyDebtPage";
+import DailyDebtsPage from "./pages/DailyDebts/DailyDebtsPage";
+import CreateDailyDebtPage from "./pages/DailyDebts/CreateDailyDebtPage";
+import DailyDebtDetailPage from "./pages/DailyDebts/DailyDebtDetailPage";
 
 // Role-based Protected Route Component
 const RoleBasedRoute = ({
@@ -107,6 +112,22 @@ export default function App() {
 
                             <Route path="/products" element={<ProductList />} />
                             <Route path="/arrivals" element={<ArrivalList />} />
+                            <Route
+                                path="/daily-debts"
+                                element={<DailyDebtsPage />}
+                            />
+                            <Route
+                                path="/daily-debts/create"
+                                element={<CreateDailyDebtPage />}
+                            />
+                            <Route
+                                path="/daily-debts/:dailyDebtId"
+                                element={<DailyDebtDetailPage />}
+                            />
+                            <Route
+                                path="/daily-debts/:dailyDebtId/add-items"
+                                element={<AddItemsToDailyDebtPage />}
+                            />
 
                             {/* Ui Elements */}
                             <Route path="/alerts" element={<Alerts />} />
@@ -174,12 +195,21 @@ export default function App() {
                             }
                         />
 
-                        {/* Check sale history sahifasi */}
                         <Route
                             path="/check-sale-history"
                             element={
                                 <RoleBasedRoute allowedRoles={[1, 2]}>
                                     <CheckSaleHistory />
+                                </RoleBasedRoute>
+                            }
+                        />
+
+                        {/* Check daily debt sahifasi */}
+                        <Route
+                            path="/check-daily-debt"
+                            element={
+                                <RoleBasedRoute allowedRoles={[1, 2]}>
+                                    <CheckDailyDebt />
                                 </RoleBasedRoute>
                             }
                         />
@@ -202,7 +232,38 @@ export default function App() {
                             }
                         />
 
-                        {/* Qarzdorlar - Faqat role_id = 1 uchun */}
+                        <Route
+                            path="/operator-daily-debts"
+                            element={
+                                <RoleBasedRoute allowedRoles={[2]}>
+                                    <DailyDebtsPage />
+                                </RoleBasedRoute>
+                            }
+                        />
+                        <Route
+                            path="/operator-daily-debts/create"
+                            element={
+                                <RoleBasedRoute allowedRoles={[2]}>
+                                    <CreateDailyDebtPage />
+                                </RoleBasedRoute>
+                            }
+                        />
+                        <Route
+                            path="/operator-daily-debts/:dailyDebtId"
+                            element={
+                                <RoleBasedRoute allowedRoles={[2]}>
+                                    <DailyDebtDetailPage />
+                                </RoleBasedRoute>
+                            }
+                        />
+                        <Route
+                            path="/operator-daily-debts/:dailyDebtId/add-items"
+                            element={
+                                <RoleBasedRoute allowedRoles={[2]}>
+                                    <AddItemsToDailyDebtPage />
+                                </RoleBasedRoute>
+                            }
+                        />
 
                         <Route path="*" element={<NotFound />} />
                     </Routes>

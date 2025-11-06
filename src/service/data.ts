@@ -3,8 +3,8 @@ import { handleAuthError } from "../utils/authUtils";
 
 // Get BASE_URL from environment variables
 export const BASE_URL =
-    import.meta.env.VITE_BASE_URL || "https://apistore.afandicloud.uz/";
-
+    // import.meta.env.VITE_BASE_URL || "https://apistore.afandicloud.uz/";
+    import.meta.env.VITE_BASE_URL || "https://azizapi.argon.uz/";
 
 axios.interceptors.request.use(
     (config) => {
@@ -249,5 +249,69 @@ export const UpdateProductPrice = async (
         product_id: productId,
         selling_price: sellingPrice,
     });
+    return response;
+};
+
+// Daily Debts API
+export const GetDailyDebtsList = async (
+    page: number = 1,
+    limit: number = 10,
+    status: string = "closed"
+) => {
+    const response = await GetDataSimple(
+        `api/daily-debts/list?page=${page}&limit=${limit}&status=${status}`
+    );
+    return response;
+};
+
+export const CreateDailyDebt = async (dailyDebtData: {
+    client_name: string;
+    client_phone_number: string;
+    client_car_number?: string;
+    items: { product_id: number; amount: number }[];
+}) => {
+    const response = await PostDataTokenJson(
+        "api/daily-debts/create",
+        dailyDebtData
+    );
+    return response;
+};
+
+export const AddItemsToDailyDebt = async (
+    dailyDebtId: number,
+    items: { product_id: number; amount: number }[]
+) => {
+    const response = await PostDataTokenJson(
+        `api/daily-debts/add-items/${dailyDebtId}`,
+        { items }
+    );
+    return response;
+};
+
+export const GetDailyDebtDetails = async (dailyDebtId: number) => {
+    const response = await GetDataSimple(`api/daily-debts/read/${dailyDebtId}`);
+    return response;
+};
+
+export const SearchDailyDebts = async (keyword: string) => {
+    const response = await PostSimple(
+        `api/daily-debts/search?keyword=${encodeURIComponent(keyword)}`
+    );
+    return response;
+};
+
+export const CloseDailyDebt = async (dailyDebtId: number) => {
+    const response = await PostSimple(
+        `api/daily-debts/close/${dailyDebtId}`,
+        {}
+    );
+    return response;
+};
+
+export const DeleteDailyDebt = async (dailyDebtId: number) => {
+    const response = await PostSimple(
+        `api/daily-debts/delete/${dailyDebtId}`,
+        {}
+    );
     return response;
 };

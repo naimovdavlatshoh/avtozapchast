@@ -375,8 +375,6 @@ const POSPage: React.FC = () => {
         return cart.reduce((total, item) => total + Number(item.total), 0);
     };
 
-    console.log(getTotalAmount());
-
     const getTotalItems = () => {
         return cart.reduce((total, item) => total + item.quantity, 0);
     };
@@ -547,6 +545,7 @@ const POSPage: React.FC = () => {
                                     {formatNumber(dollarRate)}
                                 </span>
                             </div>
+
                             <button
                                 onClick={() => setDollarRateModalOpen(true)}
                                 className="p-1 hover:bg-green-100 dark:hover:bg-green-800/30 rounded transition-colors"
@@ -567,6 +566,9 @@ const POSPage: React.FC = () => {
                                 </svg>
                             </button>
                         </div>
+                        <Link to={"/operator-daily-debts"} className="p-2 bg-gray-100 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                            Vaqtincha qarzdorlik
+                        </Link>
                         <Link
                             to={"/sales-history"}
                             className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
