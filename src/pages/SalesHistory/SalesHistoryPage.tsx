@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { GetDataSimple, PostDataTokenJson } from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
 import { formatDate } from "../../utils/dateFormat";
@@ -69,6 +69,10 @@ const SalesHistoryPage: React.FC = () => {
         String(today.getDate()).padStart(2, "0");
     const [startDate, setStartDate] = useState(todayString);
     const [endDate, setEndDate] = useState(todayString);
+
+    // Convert string dates to Date objects for DatePicker
+    const startDateObj = useMemo(() => new Date(startDate), [startDate]);
+    const endDateObj = useMemo(() => new Date(endDate), [endDate]);
 
     // Delete modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -234,7 +238,8 @@ const SalesHistoryPage: React.FC = () => {
                                 <DatePicker
                                     id="start-date"
                                     label=""
-                                    defaultDate={startDate}
+                                    dateFormat="d-m-Y"
+                                    defaultDate={startDateObj}
                                     onChange={(selectedDates) => {
                                         if (
                                             selectedDates &&
@@ -262,7 +267,8 @@ const SalesHistoryPage: React.FC = () => {
                                 <DatePicker
                                     id="end-date"
                                     label=""
-                                    defaultDate={endDate}
+                                    dateFormat="d-m-Y"
+                                    defaultDate={endDateObj}
                                     onChange={(selectedDates) => {
                                         if (
                                             selectedDates &&

@@ -83,7 +83,7 @@ const CheckDailyDebt: React.FC = () => {
     };
 
     const totalInUzs = checkData.totalAmount;
-    const totalInUsd = parseFloat(checkData.debtAmount) || 0;
+    // const totalInUsd = parseFloat(checkData.debtAmount) || 0;
 
     return (
         <div className="bg-gray-100 flex items-start justify-center pt-4 p-4 print:bg-white print:p-0">
@@ -175,14 +175,14 @@ const CheckDailyDebt: React.FC = () => {
                             {formatNumber(totalInUzs)} so'm
                         </span>
                     </div>
-                    {totalInUsd > 0 && (
+                    {/* {totalInUsd > 0 && (
                         <div className="flex justify-between">
                             <span className="text-gray-600">Jami ($):</span>
                             <span className="font-semibold text-gray-900">
                                 {totalInUsd.toFixed(2)} $
                             </span>
                         </div>
-                    )}
+                    )} */}
                     {checkData.exchange_rate > 0 && (
                         <div className="flex justify-between text-xs text-gray-500">
                             <span>Kurs:</span>

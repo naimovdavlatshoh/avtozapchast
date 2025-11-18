@@ -17,6 +17,9 @@ interface Product {
     product_name: string;
     barcode?: string | number;
     product_code?: string;
+    total_amount?: number;
+    last_receipt_price?: number;
+    selling_price?: number;
     image_path: string;
 }
 
@@ -143,12 +146,14 @@ export default function AddArrivalModal({
                                 0,
                                 items.findIndex((it) => it.product_id === 0)
                             );
-                            updateItem(
+                            const rowIndex =
                                 targetIndex === -1
                                     ? items.length - 1
-                                    : targetIndex,
-                                "product_id",
-                                list[0].product_id
+                                    : targetIndex;
+                            applyProductSelection(
+                                rowIndex,
+                                list[0].product_id,
+                                list[0]
                             );
                         }
                     } catch (err) {
@@ -191,9 +196,40 @@ export default function AddArrivalModal({
         }
     };
 
+    const applyProductSelection = (
+        index: number,
+        productId: number,
+        productData?: Product
+    ) => {
+        const product =
+            productData ||
+            products.find((prod) => prod.product_id === productId);
+
+        setItems((prevItems) => {
+            if (index < 0 || index >= prevItems.length) return prevItems;
+            const existingItem = prevItems[index];
+            const updatedItem: ArrivalItem = {
+                ...existingItem,
+                product_id: productId,
+                receipt_price:
+                    product?.last_receipt_price ??
+                    existingItem.receipt_price ??
+                    0,
+                selling_price:
+                    product?.selling_price ?? existingItem.selling_price ?? 0,
+            };
+
+            const newItems = [...prevItems];
+            newItems[index] = updatedItem;
+            return newItems;
+        });
+    };
+
     // Mahsulot tanlanganda search inputni tozalash
     const handleProductSelect = (value: string, index: number) => {
-        updateItem(index, "product_id", parseInt(value));
+        const productId = parseInt(value);
+        if (!productId || isNaN(productId)) return;
+        applyProductSelection(index, productId);
         // Search inputni tozalash uchun barcha mahsulotlarni qayta yuklash
         // Lekin faqat search qilingan bo'lsa
         if (products.length > 0 && products[0].product_id !== 0) {
@@ -399,31 +435,41 @@ export default function AddArrivalModal({
                                                     (product) => ({
                                                         value: product.product_id,
                                                         label: (
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
-                                                                    {product.image_path ? (
-                                                                        <img
-                                                                            src={
-                                                                                product.image_path
-                                                                            }
-                                                                            alt={
-                                                                                product.product_name
-                                                                            }
-                                                                            className="w-full h-full object-cover"
-                                                                        />
-                                                                    ) : (
-                                                                        <span className="text-xs">
-                                                                            📦
-                                                                        </span>
-                                                                    )}
+                                                            <div className="flex items-center justify-between gap-2 w-full">
+                                                                <div className="flex items-center gap-2 min-w-0">
+                                                                    <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                                        {product.image_path ? (
+                                                                            <img
+                                                                                src={
+                                                                                    product.image_path
+                                                                                }
+                                                                                alt={
+                                                                                    product.product_name
+                                                                                }
+                                                                                className="w-full h-full object-cover"
+                                                                            />
+                                                                        ) : (
+                                                                            <span className="text-xs">
+                                                                                📦
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-sm truncate">
+                                                                        {
+                                                                            product.product_name
+                                                                        }
+                                                                        {product.product_code
+                                                                            ? ` - ${product.product_code}`
+                                                                            : ` - ${product.barcode}:`}
+                                                                    </span>
                                                                 </div>
-                                                                <span className="text-sm">
-                                                                    {
-                                                                        product.product_name
-                                                                    }
-                                                                    {product.product_code
-                                                                        ? ` - ${product.product_code}`
-                                                                        : ` - ${product.barcode}:`}
+                                                                <span className="text-xs text-gray-500 whitespace-nowrap">
+                                                                    {product.total_amount !==
+                                                                        undefined &&
+                                                                    product.total_amount !==
+                                                                        null
+                                                                        ? `${product.total_amount} dona`
+                                                                        : "0 dona"}
                                                                 </span>
                                                             </div>
                                                         ),

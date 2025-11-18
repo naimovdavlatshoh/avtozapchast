@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
     PostSimple,
@@ -37,16 +37,37 @@ interface CartItem {
     image_path?: string;
 }
 
-const AddItemsToDailyDebtPage: React.FC = () => {
-    const { dailyDebtId } = useParams<{ dailyDebtId: string }>();
-    const navigate = useNavigate();
+interface AddItemsToDailyDebtSectionProps {
+    dailyDebtId: number;
+    variant?: "page" | "embedded";
+    onBack?: () => void;
+    onItemsAdded?: () => void;
+    initialDailyDebtInfo?: {
+        client_name: string;
+        client_phone_number: string;
+        [key: string]: any;
+    } | null;
+}
+
+export const AddItemsToDailyDebtSection: React.FC<
+    AddItemsToDailyDebtSectionProps
+> = ({
+    dailyDebtId,
+    variant = "embedded",
+    onBack,
+    onItemsAdded,
+    initialDailyDebtInfo = null,
+}) => {
     const [searchKeyword, setSearchKeyword] = useState("");
     const [products, setProducts] = useState<Product[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isLoadingProducts, setIsLoadingProducts] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [dollarRate, setDollarRate] = useState<number>(0);
-    const [dailyDebtInfo, setDailyDebtInfo] = useState<any>(null);
+    const [dailyDebtInfo, setDailyDebtInfo] =
+        useState<any>(initialDailyDebtInfo);
+
+    const isPageVariant = variant === "page";
 
     // Fetch dollar rate
     useEffect(() => {
@@ -61,16 +82,16 @@ const AddItemsToDailyDebtPage: React.FC = () => {
         fetchRate();
     }, []);
 
-    // Fetch daily debt info
+    // Fetch daily debt info if not provided
     useEffect(() => {
+        if (dailyDebtInfo) return;
         const fetchDailyDebtInfo = async () => {
-            if (!dailyDebtId) return;
             try {
                 const res = await GetDataSimple(
                     `api/daily-debts/list?page=1&limit=1&status=closed`
                 );
                 const debt = res?.result?.find(
-                    (d: any) => d.daily_debt_id === parseInt(dailyDebtId)
+                    (d: any) => d.daily_debt_id === dailyDebtId
                 );
                 if (debt) {
                     setDailyDebtInfo(debt);
@@ -80,11 +101,17 @@ const AddItemsToDailyDebtPage: React.FC = () => {
             }
         };
         fetchDailyDebtInfo();
-    }, [dailyDebtId]);
+    }, [dailyDebtId, dailyDebtInfo]);
+
+    useEffect(() => {
+        if (initialDailyDebtInfo) {
+            setDailyDebtInfo(initialDailyDebtInfo);
+        }
+    }, [initialDailyDebtInfo]);
 
     // Search products
-    const handleSearch = async () => {
-        if (!searchKeyword.trim() || searchKeyword.trim().length < 3) {
+    const handleSearch = useCallback(async (keyword: string) => {
+        if (!keyword.trim() || keyword.trim().length < 3) {
             setProducts([]);
             return;
         }
@@ -92,9 +119,7 @@ const AddItemsToDailyDebtPage: React.FC = () => {
         setIsLoadingProducts(true);
         try {
             const response = await PostSimple(
-                `api/products/search?keyword=${encodeURIComponent(
-                    searchKeyword
-                )}`
+                `api/products/search?keyword=${encodeURIComponent(keyword)}`
             );
             if (response?.data?.result) {
                 setProducts(response.data.result);
@@ -104,12 +129,12 @@ const AddItemsToDailyDebtPage: React.FC = () => {
         } finally {
             setIsLoadingProducts(false);
         }
-    };
+    }, []);
 
     const handleSearchChange = (value: string) => {
         setSearchKeyword(value);
         if (value.trim().length > 3) {
-            handleSearch();
+            handleSearch(value);
         } else if (value.trim().length === 0) {
             setProducts([]);
         }
@@ -218,11 +243,6 @@ const AddItemsToDailyDebtPage: React.FC = () => {
 
     // Submit
     const handleSubmit = async () => {
-        if (!dailyDebtId) {
-            toast.error("Qarzdorlik ID topilmadi");
-            return;
-        }
-
         if (cart.length === 0) {
             toast.error("Karzina bo'sh. Kamida bitta mahsulot qo'shing");
             return;
@@ -235,18 +255,14 @@ const AddItemsToDailyDebtPage: React.FC = () => {
                 amount: item.quantity,
             }));
 
-            const response = await AddItemsToDailyDebt(
-                parseInt(dailyDebtId),
-                items
-            );
+            const response = await AddItemsToDailyDebt(dailyDebtId, items);
 
             if (response) {
                 toast.success("Mahsulotlar muvaffaqiyatli qo'shildi!");
-                navigate(
-                    localStorage.getItem("role_id") === "1"
-                        ? "/daily-debts"
-                        : "/operator-daily-debts"
-                );
+                setCart([]);
+                setProducts([]);
+                setSearchKeyword("");
+                onItemsAdded?.();
             }
         } catch (error: any) {
             toast.error(error.response?.data?.error || "Xatolik yuz berdi");
@@ -258,40 +274,44 @@ const AddItemsToDailyDebtPage: React.FC = () => {
     return (
         <div
             className={
-                localStorage.getItem("role_id") === "2"
-                    ? "p-5 min-h-screen bg-gray-50 flex flex-col"
-                    : "min-h-screen bg-gray-50 flex flex-col"
+                isPageVariant
+                    ? "min-h-screen bg-gray-50 flex flex-col"
+                    : "bg-white border border-gray-200 rounded-lg p-4 shadow-sm space-y-4"
             }
         >
             {/* Header */}
             <div
                 className={
-                    localStorage.getItem("role_id") === "2"
-                        ? "flex-shrink-0"
-                        : "py-2 px-6 flex-shrink-0"
+                    isPageVariant
+                        ? "py-2 px-6 flex-shrink-0"
+                        : "flex items-center justify-between"
                 }
             >
-                <div className="flex h-full justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() =>
-                                navigate(
-                                    localStorage.getItem("role_id") === "1"
-                                        ? "/daily-debts"
-                                        : "/operator-daily-debts"
-                                )
-                            }
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Orqaga"
-                        >
-                            <MdArrowBack className="text-2xl" />
-                        </button>
+                <div className="flex h-full justify-between items-center w-full gap-4">
+                    <div className="flex items-center gap-3">
+                        {isPageVariant && onBack && (
+                            <button
+                                onClick={onBack}
+                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Orqaga"
+                            >
+                                <MdArrowBack className="text-2xl" />
+                            </button>
+                        )}
                         <div>
+                            <p
+                                className={`font-semibold ${
+                                    isPageVariant
+                                        ? "text-xl text-black"
+                                        : "text-base text-gray-900"
+                                }`}
+                            >
+                                Mahsulot qo'shish
+                            </p>
                             {dailyDebtInfo && (
-                                <p className="text-xl text-black">
+                                <p className="text-sm text-gray-600">
                                     Mijoz: {dailyDebtInfo.client_name} |
                                     Telefon: {dailyDebtInfo.client_phone_number}
-                                    {" - "} Mahsulot qo'shish
                                 </p>
                             )}
                         </div>
@@ -300,7 +320,11 @@ const AddItemsToDailyDebtPage: React.FC = () => {
             </div>
 
             {/* Main Content - Two Column Layout */}
-            <div className="relative mt-4 px-6">
+            <div
+                className={
+                    isPageVariant ? "relative mt-4 px-6" : "relative mt-2"
+                }
+            >
                 <input
                     type="text"
                     placeholder="Mahsulot qidirish... (3+ harf)"
@@ -314,15 +338,29 @@ const AddItemsToDailyDebtPage: React.FC = () => {
                             setSearchKeyword("");
                             setProducts([]);
                         }}
-                        className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className={`absolute ${
+                            isPageVariant ? "right-10" : "right-4"
+                        } top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600`}
                     >
                         ✕
                     </button>
                 )}
             </div>
-            <div className="flex-1 flex overflow-hidden">
+            <div
+                className={
+                    isPageVariant
+                        ? "flex-1 flex overflow-hidden"
+                        : "flex flex-col lg:flex-row gap-4"
+                }
+            >
                 {/* Left Side - Search, Products and Cart (70%) */}
-                <div className="w-[70%] px-6 overflow-y-auto">
+                <div
+                    className={
+                        isPageVariant
+                            ? "w-[70%] px-6 overflow-y-auto"
+                            : "flex-1 space-y-4"
+                    }
+                >
                     {/* Products List */}
                     {searchKeyword.trim() && products.length > 0 && (
                         <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto mb-4 mt-4">
@@ -421,31 +459,24 @@ const AddItemsToDailyDebtPage: React.FC = () => {
                         )}
 
                     {/* Cart */}
-                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg mt-4">
-                        <div className="p-4 border-b border-gray-200">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                    <MdShoppingCart className="text-blue-600" />
-                                    Karzina
-                                </h2>
-                                {cart.length > 0 && (
+                    {cart.length > 0 && (
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg mt-4">
+                            <div className="p-4 border-b border-gray-200">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                        <MdShoppingCart className="text-blue-600" />
+                                        Karzina
+                                    </h2>
                                     <button
                                         onClick={clearCart}
                                         className="text-red-500 hover:text-red-700 text-sm"
                                     >
                                         Tozalash
                                     </button>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-4 h-full">
-                            {cart.length === 0 ? (
-                                <div className="text-center text-gray-500 mt-8">
-                                    <MdShoppingCart className="text-4xl mx-auto mb-2 text-gray-300" />
-                                    <p>Karzina bo'sh</p>
                                 </div>
-                            ) : (
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 h-full">
                                 <div className="space-y-3">
                                     {cart.map((item) => (
                                         <div
@@ -533,70 +564,104 @@ const AddItemsToDailyDebtPage: React.FC = () => {
                                         </div>
                                     ))}
                                 </div>
-                            )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Right Side - Summary (30%) */}
-                <div className="w-[30%] px-6 py-4 overflow-y-auto bg-gray-50">
-                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <MdShoppingCart className="text-blue-600" />
-                            Umumiy ma'lumot
-                        </h3>
+                {cart.length > 0 && (
+                    <div
+                        className={
+                            isPageVariant
+                                ? "w-[30%] px-6 py-4 overflow-y-auto bg-gray-50"
+                                : "w-full lg:w-[30%] bg-gray-50 rounded-lg p-4"
+                        }
+                    >
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-6">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <MdShoppingCart className="text-blue-600" />
+                                Umumiy ma'lumot
+                            </h3>
 
-                        <div className="space-y-3 mb-6">
-                            <div className="flex justify-between text-sm">
-                                <span>Mahsulotlar:</span>
-                                <span className="font-semibold">
-                                    {getTotalItems()}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between text-lg font-bold border-t pt-3">
-                                <span>Jami:</span>
-                                <div className="text-right">
-                                    <span className="text-blue-600">
-                                        {getTotalAmount()} $
+                            <div className="space-y-3 mb-6">
+                                <div className="flex justify-between text-sm">
+                                    <span>Mahsulotlar:</span>
+                                    <span className="font-semibold">
+                                        {getTotalItems()}
                                     </span>
-                                    {dollarRate > 0 && (
-                                        <p className="text-sm text-gray-500">
-                                            ≈{" "}
-                                            {formatNumber(
-                                                convertUsdToUzs(
-                                                    getTotalAmount()
-                                                )
-                                            )}{" "}
-                                            so'm
-                                        </p>
-                                    )}
+                                </div>
+
+                                <div className="flex justify-between text-lg font-bold border-t pt-3">
+                                    <span>Jami:</span>
+                                    <div className="text-right">
+                                        <span className="text-blue-600">
+                                            {getTotalAmount()} $
+                                        </span>
+                                        {dollarRate > 0 && (
+                                            <p className="text-sm text-gray-500">
+                                                ≈{" "}
+                                                {formatNumber(
+                                                    convertUsdToUzs(
+                                                        getTotalAmount()
+                                                    )
+                                                )}{" "}
+                                                so'm
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting || cart.length === 0}
-                            className={`w-full px-4 py-3 text-white rounded-md transition-colors ${
-                                isSubmitting || cart.length === 0
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
-                            }`}
-                        >
-                            {isSubmitting ? (
-                                <div className="flex items-center justify-center gap-2">
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Qo'shilmoqda...
-                                </div>
-                            ) : (
-                                "Qo'shish"
-                            )}
-                        </button>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting || cart.length === 0}
+                                className={`w-full px-4 py-3 text-white rounded-md transition-colors ${
+                                    isSubmitting || cart.length === 0
+                                        ? "bg-gray-400 cursor-not-allowed"
+                                        : "bg-blue-600 hover:bg-blue-700"
+                                }`}
+                            >
+                                {isSubmitting ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Qo'shilmoqda...
+                                    </div>
+                                ) : (
+                                    "Qo'shish"
+                                )}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
+    );
+};
+
+const AddItemsToDailyDebtPage: React.FC = () => {
+    const { dailyDebtId } = useParams<{ dailyDebtId: string }>();
+    const navigate = useNavigate();
+
+    if (!dailyDebtId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-gray-500">
+                    Qarzdorlik ID topilmadi. Please qaytadan urinib ko'ring.
+                </p>
+            </div>
+        );
+    }
+
+    const numericId = parseInt(dailyDebtId);
+
+    return (
+        <AddItemsToDailyDebtSection
+            dailyDebtId={numericId}
+            variant="page"
+            onBack={() => navigate("/daily-debts")}
+            onItemsAdded={() => navigate("/daily-debts")}
+        />
     );
 };
 

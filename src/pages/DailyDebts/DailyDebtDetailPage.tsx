@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router";
 import { GetDailyDebtDetails } from "../../service/data";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Loader from "../../components/ui/loader/Loader";
@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import { formatDateOnly } from "../../utils/dateFormat";
 import { formatNumber } from "../../utils/numberFormat";
 import { MdArrowBack } from "react-icons/md";
+import { AddItemsToDailyDebtSection } from "./AddItemsToDailyDebtPage";
 
 type DailyDebtItem = {
     daily_debt_item_id: number;
@@ -40,33 +41,33 @@ const DailyDebtDetailPage: React.FC = () => {
         useState<DailyDebtDetail | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
+    const numericDailyDebtId = dailyDebtId ? parseInt(dailyDebtId) : null;
+
+    const fetchDetail = useCallback(async () => {
+        if (!numericDailyDebtId) {
+            toast.error("Qarzdorlik ID topilmadi");
+            navigate("/daily-debts");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await GetDailyDebtDetails(numericDailyDebtId);
+            setDailyDebtDetail(response);
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.error ||
+                    "Ma'lumotlarni yuklashda xatolik"
+            );
+            navigate("/daily-debts");
+        } finally {
+            setLoading(false);
+        }
+    }, [navigate, numericDailyDebtId]);
+
     useEffect(() => {
-        const fetchDetail = async () => {
-            if (!dailyDebtId) {
-                toast.error("Qarzdorlik ID topilmadi");
-                navigate("/daily-debts");
-                return;
-            }
-
-            setLoading(true);
-            try {
-                const response = await GetDailyDebtDetails(
-                    parseInt(dailyDebtId)
-                );
-                setDailyDebtDetail(response);
-            } catch (error: any) {
-                toast.error(
-                    error?.response?.data?.error ||
-                        "Ma'lumotlarni yuklashda xatolik"
-                );
-                navigate("/daily-debts");
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchDetail();
-    }, [dailyDebtId, navigate]);
+    }, [fetchDetail]);
 
     if (loading) {
         return (
@@ -91,7 +92,7 @@ const DailyDebtDetailPage: React.FC = () => {
     }
 
     return (
-        <div className={localStorage.getItem("role_id") === "2" ? "p-5" : ""}>
+        <>
             <div className="space-y-6">
                 <div className="flex items-center justify-between gap-5 mb-6">
                     <div className="flex items-center gap-5">
@@ -106,14 +107,6 @@ const DailyDebtDetailPage: React.FC = () => {
                         </h1>
                     </div>
                     <div className="flex items-center gap-5">
-                        {" "}
-                        <Link
-                            to={localStorage.getItem("role_id") === "1"? `/daily-debts/${dailyDebtId}/add-items`:`/operator-daily-debts/${dailyDebtId}/add-items`}
-                            className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-green-600 bg-green-100 rounded hover:bg-green-200 transition-colors"
-                            title="Mahsulot qo'shish"
-                        >
-                            + Qo'shish
-                        </Link>
                         <button
                             onClick={() => {
                                 const checkData = {
@@ -174,6 +167,18 @@ const DailyDebtDetailPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                {dailyDebtDetail && numericDailyDebtId && (
+                    <AddItemsToDailyDebtSection
+                        dailyDebtId={numericDailyDebtId}
+                        variant="embedded"
+                        initialDailyDebtInfo={{
+                            client_name: dailyDebtDetail.client_name,
+                            client_phone_number:
+                                dailyDebtDetail.client_phone_number,
+                        }}
+                        onItemsAdded={fetchDetail}
+                    />
+                )}
 
                 <div className="space-y-6">
                     {/* Client Info */}
@@ -420,7 +425,7 @@ const DailyDebtDetailPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 
