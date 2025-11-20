@@ -1,16 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
-import { Modal } from "../../components/ui/modal";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
+// import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import Button from "../../components/ui/button/Button";
-import Select from "../../components/form/Select";
 import {
-    PostDataTokenJson,
     GetDataSimple,
+    PostDataTokenJson,
     PostSimple,
 } from "../../service/data";
-import toast from "react-hot-toast";
 import { formatNumber } from "../../utils/numberFormat";
+import toast from "react-hot-toast";
+import { MdArrowBack } from "react-icons/md";
 
 interface Product {
     product_id: number;
@@ -28,31 +29,30 @@ interface ArrivalItem {
     amount: number;
     receipt_price: number | string;
     selling_price: number | string;
+    product_name?: string;
+    barcode?: string | number;
+    product_code?: string;
+    total_amount?: number;
+    image_path?: string;
 }
 
-interface AddArrivalModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    changeStatus: () => void;
-    setResponse: (response: string) => void;
-}
+const cashType: 0 = 0;
 
-export default function AddArrivalModal({
-    isOpen,
-    onClose,
-    changeStatus,
-    setResponse,
-}: AddArrivalModalProps) {
-    // Removed these from UI; we'll always send cash_type=0
-    const cashType: 0 = 0;
+const initialItem: ArrivalItem = {
+    product_id: 0,
+    amount: 0,
+    receipt_price: 0,
+    selling_price: 0,
+};
+
+export default function AddArrivalPage() {
+    const navigate = useNavigate();
     const [dollarRate, setDollarRate] = useState<number>(0);
-    const [items, setItems] = useState<ArrivalItem[]>([
-        { product_id: 0, amount: 0, receipt_price: 0, selling_price: 0 },
-    ]);
+    const [items, setItems] = useState<ArrivalItem[]>([]);
+    const [productResults, setProductResults] = useState<Product[]>([]);
     const [searchingProducts, setSearchingProducts] = useState(false);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    // Barcode scan buffer
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [barcodeBuffer, setBarcodeBuffer] = useState("");
     let barcodeTimeout: number | undefined;
 
@@ -71,23 +71,8 @@ export default function AddArrivalModal({
     });
 
     useEffect(() => {
-        if (isOpen) {
-            fetchProducts();
-            fetchDollarRate();
-        }
-    }, [isOpen]);
-
-    const fetchProducts = async () => {
-        try {
-            const res = await GetDataSimple(
-                "api/products/list?page=1&limit=100"
-            );
-            setProducts(res?.result || []);
-        } catch (error) {
-            console.error("Mahsulotlarni yuklashda xatolik:", error);
-            toast.error("Mahsulotlarni yuklashda xatolik");
-        }
-    };
+        fetchDollarRate();
+    }, []);
 
     const fetchDollarRate = async () => {
         try {
@@ -99,10 +84,7 @@ export default function AddArrivalModal({
         }
     };
 
-    // Handle fast barcode scan from hardware scanner (global keydown)
     useEffect(() => {
-        if (!isOpen) return;
-
         const onKeyDown = (e: KeyboardEvent) => {
             const active = document.activeElement as HTMLElement | null;
             const isTyping = !!(
@@ -112,10 +94,8 @@ export default function AddArrivalModal({
                     active.getAttribute("contenteditable") === "true")
             );
 
-            // Do not intercept while user is typing in inputs
             if (isTyping) return;
 
-            // Build buffer for printable keys
             if (e.key.length === 1) {
                 setBarcodeBuffer((prev) => (prev || "") + e.key);
                 window.clearTimeout(barcodeTimeout);
@@ -125,11 +105,9 @@ export default function AddArrivalModal({
                 return;
             }
 
-            // On Enter, treat buffer as scanned barcode
             if (e.key === "Enter" && barcodeBuffer.trim()) {
                 const code = barcodeBuffer.trim();
                 setBarcodeBuffer("");
-                // direct search and attempt to auto-assign
                 (async () => {
                     try {
                         const res = await PostSimple(
@@ -139,24 +117,11 @@ export default function AddArrivalModal({
                         );
                         const list: Product[] =
                             res?.data?.result || res?.data || [];
-                        setProducts(Array.isArray(list) ? list : []);
+                        setProductResults(Array.isArray(list) ? list : []);
                         if (Array.isArray(list) && list.length === 1) {
-                            // put into first empty row or the last row
-                            const targetIndex = Math.max(
-                                0,
-                                items.findIndex((it) => it.product_id === 0)
-                            );
-                            const rowIndex =
-                                targetIndex === -1
-                                    ? items.length - 1
-                                    : targetIndex;
-                            applyProductSelection(
-                                rowIndex,
-                                list[0].product_id,
-                                list[0]
-                            );
+                            addProductAsNewItem(list[0]);
                         }
-                    } catch (err) {
+                    } catch {
                         // ignore
                     }
                 })();
@@ -168,26 +133,24 @@ export default function AddArrivalModal({
             document.removeEventListener("keydown", onKeyDown);
             window.clearTimeout(barcodeTimeout);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, items]);
+    }, [items]);
 
     const searchProducts = async (keyword: string) => {
         const q = keyword.trim();
         if (!q) {
-            fetchProducts();
+            setProductResults([]);
             return;
         }
 
         setSearchingProducts(true);
         try {
-            // Backend barcha search uchun keyword parametrini ishlatadi
             const endpoint = `api/products/search?keyword=${encodeURIComponent(
                 q
             )}`;
 
             const res = await PostSimple(endpoint);
             const result = res?.data?.result || res?.data || [];
-            setProducts(Array.isArray(result) ? result : []);
+            setProductResults(Array.isArray(result) ? result : []);
         } catch (error) {
             console.error("Mahsulotlarni qidirishda xatolik:", error);
             toast.error("Mahsulotlarni qidirishda xatolik");
@@ -196,53 +159,51 @@ export default function AddArrivalModal({
         }
     };
 
-    const applyProductSelection = (
-        index: number,
-        productId: number,
-        productData?: Product
-    ) => {
-        const product =
-            productData ||
-            products.find((prod) => prod.product_id === productId);
+    useEffect(() => {
+        const trimmed = searchTerm.trim();
+        if (trimmed.length === 0) {
+            setProductResults([]);
+            return;
+        }
+        if (trimmed.length < 3) return;
+        const timeout = setTimeout(() => {
+            searchProducts(trimmed);
+        }, 400);
+        return () => clearTimeout(timeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm]);
 
+    const addProductAsNewItem = (product: Product) => {
         setItems((prevItems) => {
-            if (index < 0 || index >= prevItems.length) return prevItems;
-            const existingItem = prevItems[index];
-            const updatedItem: ArrivalItem = {
-                ...existingItem,
-                product_id: productId,
-                receipt_price:
-                    product?.last_receipt_price ??
-                    existingItem.receipt_price ??
-                    0,
-                selling_price:
-                    product?.selling_price ?? existingItem.selling_price ?? 0,
+            const newItems = [...prevItems];
+            let targetIndex = newItems.findIndex(
+                (item) => item.product_id === 0
+            );
+
+            if (targetIndex === -1) {
+                targetIndex = newItems.length;
+                newItems.push({ ...initialItem });
+            }
+
+            newItems[targetIndex] = {
+                ...newItems[targetIndex],
+                product_id: product.product_id,
+                product_name: product.product_name,
+                product_code: product.product_code,
+                barcode: product.barcode,
+                total_amount: product.total_amount ?? 0,
+                image_path: product.image_path,
+                receipt_price: product.last_receipt_price ?? 0,
+                selling_price: product.selling_price ?? 0,
             };
 
-            const newItems = [...prevItems];
-            newItems[index] = updatedItem;
             return newItems;
         });
     };
 
-    // Mahsulot tanlanganda search inputni tozalash
-    const handleProductSelect = (value: string, index: number) => {
-        const productId = parseInt(value);
-        if (!productId || isNaN(productId)) return;
-        applyProductSelection(index, productId);
-        // Search inputni tozalash uchun barcha mahsulotlarni qayta yuklash
-        // Lekin faqat search qilingan bo'lsa
-        if (products.length > 0 && products[0].product_id !== 0) {
-            fetchProducts();
-        }
-    };
-
-    const addItem = () => {
-        setItems([
-            ...items,
-            { product_id: 0, amount: 0, receipt_price: 0, selling_price: 0 },
-        ]);
-    };
+    // const addItem = () => {
+    //     setItems((prev) => [...prev, { ...initialItem }]);
+    // };
 
     const removeItem = (index: number) => {
         if (items.length > 1) {
@@ -260,7 +221,6 @@ export default function AddArrivalModal({
         setItems(newItems);
     };
 
-    // Valyuta konvertatsiya funksiyalari
     const convertToSom = (dollarAmount: number) => {
         return dollarAmount * dollarRate;
     };
@@ -269,25 +229,16 @@ export default function AddArrivalModal({
         return dollarRate > 0 ? somAmount / dollarRate : 0;
     };
 
-    // Raqamlarni bo'shliq bilan formatlash
     const formatNumberWithSpaces = (value: string | number) => {
         if (!value && value !== ".") return "";
         const stringValue = value.toString();
-        // Remove any existing spaces
         const cleanValue = stringValue.replace(/\s/g, "");
-
-        // Agar faqat nuqta bo'lsa, uni qaytarish
         if (cleanValue === ".") return ".";
-
-        // Split by decimal point
         const parts = cleanValue.split(".");
-        // Format integer part with spaces
         const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        // Return formatted number
         return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
     };
 
-    // Helpers for totals
     const getReceiptPriceNumber = (value: number | string): number => {
         if (typeof value === "number") return value;
         const parsed = parseFloat(value);
@@ -307,7 +258,6 @@ export default function AddArrivalModal({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
         const validItems = items
             .map((item) => {
                 const receipt =
@@ -337,391 +287,422 @@ export default function AddArrivalModal({
             return;
         }
 
-        setIsLoading(true);
+        setIsSubmitting(true);
         try {
             const data = {
                 cash_type: 0 as const,
                 items: validItems,
             };
 
-            const response = await PostDataTokenJson(
-                "api/arrival/create",
-                data
-            );
-            setResponse(JSON.stringify(response));
+            await PostDataTokenJson("api/arrival/create", data);
             toast.success("Kirim muvaffaqiyatli qo'shildi!");
-            changeStatus();
-            onClose();
-            resetForm();
+            navigate("/arrivals");
         } catch (error) {
             console.error("Kirim qo'shishda xatolik:", error);
             toast.error("Kirim qo'shishda xatolik");
-            onClose();
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
 
-    const resetForm = () => {
-        setItems([
-            { product_id: 0, amount: 0, receipt_price: 0, selling_price: 0 },
-        ]);
-    };
-
-    const handleClose = () => {
-        resetForm();
-        onClose();
+    const handleProductCardSelect = (product: Product) => {
+        if (!items.length) {
+            setItems([initialItem]);
+        }
+        addProductAsNewItem(product);
+        setSearchTerm("");
+        setProductResults([]);
     };
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={handleClose}
-            className="max-w-4xl max-h-[90vh] overflow-y-auto"
-        >
-            <div className="p-6">
-                <h2 className="text-xl font-semibold mb-4">
-                    Yangi kirim qo'shish
-                </h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Removed arrival number and comments */}
-
-                    <div>
-                        <Label>Dollar kursi</Label>
-                        <Input
-                            type="text"
-                            value={formatNumber(dollarRate)}
-                            placeholder="Dollar kursi yuklanmoqda..."
-                            className="bg-gray-100 outline-none"
-                        />
+        <>
+            {/* <PageBreadcrumb pageTitle="Yangi kirim qo'shish" /> */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <button
+                        onClick={() => navigate("/arrivals")}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100"
+                    >
+                        <MdArrowBack className="text-lg" />
+                        Kirimlar ro'yxatiga qaytish
+                    </button>
+                    <div className="text-sm text-gray-500">
+                        Dollar kursi:{" "}
+                        <span className="font-semibold text-gray-700">
+                            {formatNumber(dollarRate)} so'm
+                        </span>
                     </div>
+                </div>
 
-                    <div>
-                        <div className="flex justify-between items-center mb-3">
-                            <Label>Mahsulotlar ({items.length})</Label>
-                            <Button
-                                type="button"
-                                onClick={addItem}
-                                className="bg-green-500 hover:bg-green-600 text-sm px-3 py-1"
-                            >
-                                + Qo'shish
-                            </Button>
-                        </div>
-
-                        <div className="space-y-3 min-h-52 max-h-80 overflow-y-auto pr-2">
-                            {items.map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+                <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="w-full  relative ">
+                            <Input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Mahsulot qidirish... (3+ harf)"
+                                className="w-full"
+                            />
+                            {searchTerm && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchTerm("")}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                 >
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div className="col-span-1">
-                                            <Label className="text-xs">
-                                                Mahsulot
-                                            </Label>
-                                            <Select
-                                                defaultValue={
-                                                    item.product_id?.toString() ||
-                                                    ""
-                                                }
-                                                onChange={(value: string) =>
-                                                    handleProductSelect(
-                                                        value,
-                                                        index
-                                                    )
-                                                }
-                                                // @ts-ignore
-                                                options={products.map(
-                                                    (product) => ({
-                                                        value: product.product_id,
-                                                        label: (
-                                                            <div className="flex items-center justify-between gap-2 w-full">
-                                                                <div className="flex items-center gap-2 min-w-0">
-                                                                    <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
-                                                                        {product.image_path ? (
-                                                                            <img
-                                                                                src={
-                                                                                    product.image_path
-                                                                                }
-                                                                                alt={
-                                                                                    product.product_name
-                                                                                }
-                                                                                className="w-full h-full object-cover"
-                                                                            />
-                                                                        ) : (
-                                                                            <span className="text-xs">
-                                                                                📦
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <span className="text-sm truncate">
-                                                                        {
-                                                                            product.product_name
-                                                                        }
-                                                                        {product.product_code
-                                                                            ? ` - ${product.product_code}`
-                                                                            : ` - ${product.barcode}:`}
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-xs text-gray-500 whitespace-nowrap">
-                                                                    {product.total_amount !==
-                                                                        undefined &&
-                                                                    product.total_amount !==
-                                                                        null
-                                                                        ? `${product.total_amount} dona`
-                                                                        : "0 dona"}
-                                                                </span>
-                                                            </div>
-                                                        ),
-                                                    })
-                                                )}
-                                                placeholder="Tanlang"
-                                                searchable={true}
-                                                onSearch={searchProducts}
-                                                searching={searchingProducts}
-                                                externalSearchTerm={
-                                                    barcodeBuffer
-                                                }
-                                            />
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div className="min-h-[50px]">
+                        {searchTerm.trim().length > 0 &&
+                        searchTerm.trim().length < 3 ? (
+                            <p className="text-sm text-gray-500">
+                                Qidiruv uchun kamida 3 ta belgi kiriting.
+                            </p>
+                        ) : searchingProducts ? (
+                            <div className="flex justify-center items-center py-6">
+                                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        ) : productResults.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                                Mahsulotlar topilmadi.
+                            </p>
+                        ) : (
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                                {productResults.map((product) => (
+                                    <div
+                                        key={product.product_id}
+                                        className="border border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors bg-gray-50 flex flex-col gap-3"
+                                    >
+                                        <div className="w-full h-40 bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
+                                            {product.image_path ? (
+                                                <img
+                                                    src={product.image_path}
+                                                    alt={product.product_name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="text-4xl">
+                                                    📦
+                                                </span>
+                                            )}
                                         </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                            <div>
-                                                <Label className="text-xs">
-                                                    Miqdor
-                                                </Label>
-                                                <Input
-                                                    type="text"
-                                                    value={
-                                                        item.amount
-                                                            ? formatNumber(
-                                                                  item.amount
-                                                              )
-                                                            : ""
-                                                    }
-                                                    onChange={(e) => {
-                                                        const value =
-                                                            e.target.value.replace(
-                                                                /\s/g,
-                                                                ""
-                                                            );
-                                                        updateItem(
-                                                            index,
-                                                            "amount",
-                                                            parseInt(value) || 0
-                                                        );
-                                                    }}
-                                                    placeholder="Miqdor"
-                                                />
+                                        <div>
+                                            <div className="text-sm font-semibold text-gray-900 line-clamp-1">
+                                                {product.product_name}
                                             </div>
-                                            <div>
-                                                <Label className="text-xs">
-                                                    Kirim narxi (
-                                                    {cashType === 0
-                                                        ? "$"
-                                                        : "UZS"}
-                                                    )
-                                                </Label>
-                                                <input
-                                                    type="text"
-                                                    value={formatNumberWithSpaces(
-                                                        item.receipt_price || ""
-                                                    )}
-                                                    onChange={(e) => {
-                                                        const value =
-                                                            e.target.value.replace(
-                                                                /\s/g,
-                                                                ""
-                                                            ); // Remove spaces for processing
 
-                                                        // Allow empty string, numbers, and decimal points
-                                                        if (
-                                                            value === "" ||
-                                                            value === "." ||
-                                                            /^\d*\.?\d*$/.test(
-                                                                value
-                                                            )
-                                                        ) {
-                                                            // Update the input display - faqat string sifatida saqlash
-                                                            updateItem(
-                                                                index,
-                                                                "receipt_price",
-                                                                value
-                                                            );
-                                                        }
-                                                    }}
-                                                    onBlur={(e) => {
-                                                        // Input'dan chiqganda raqamga aylantirish
-                                                        const value =
-                                                            e.target.value.replace(
-                                                                /\s/g,
-                                                                ""
-                                                            );
-                                                        if (
-                                                            value === "" ||
-                                                            value === "."
-                                                        ) {
-                                                            updateItem(
-                                                                index,
-                                                                "receipt_price",
-                                                                0
-                                                            );
-                                                        } else {
-                                                            const parsedValue =
-                                                                parseFloat(
-                                                                    value
-                                                                );
-                                                            if (
-                                                                !isNaN(
-                                                                    parsedValue
-                                                                )
-                                                            ) {
-                                                                updateItem(
-                                                                    index,
-                                                                    "receipt_price",
-                                                                    parsedValue
-                                                                );
-                                                            }
-                                                        }
-                                                    }}
-                                                    placeholder={`Kirim narxi (${
-                                                        cashType === 0
-                                                            ? "$"
-                                                            : "UZS"
-                                                    })`}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            <p className="text-xs text-gray-500">
+                                                Kod:{" "}
+                                                {product.product_code || "-"}
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-1">
+                                                Sklad:{" "}
+                                                <span className="font-semibold">
+                                                    {product.total_amount ?? 0}{" "}
+                                                    dona
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                handleProductCardSelect(product)
+                                            }
+                                            className="mt-3 w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                        >
+                                            Ushbu mahsulotni tanlash
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <form
+                    onSubmit={handleSubmit}
+                    className="bg-white border border-gray-200 rounded-xl p-6 space-y-4"
+                >
+                    <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                        {items.map((item, index) => (
+                            <div
+                                key={index}
+                                className="border border-gray-200 rounded-lg p-4 bg-white"
+                            >
+                                <div className="flex flex-col lg:flex-row gap-6 items-center">
+                                    {/* Chap tomonda katta rasm */}
+                                    <div className="flex-shrink-0 w-1/3">
+                                        <div className="w-full h-[300px] bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
+                                            {item.image_path ? (
+                                                <img
+                                                    src={item.image_path}
+                                                    alt={item.product_name}
+                                                    className="w-full h-full object-contain"
                                                 />
-                                                {dollarRate > 0 && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {(() => {
-                                                            const value =
-                                                                item.receipt_price;
-                                                            if (
-                                                                value === "" ||
-                                                                value === "."
-                                                            )
-                                                                return "";
-
-                                                            const numValue =
-                                                                typeof value ===
-                                                                "string"
-                                                                    ? parseFloat(
-                                                                          value
-                                                                      )
-                                                                    : value;
-                                                            if (
-                                                                isNaN(
-                                                                    numValue
-                                                                ) ||
-                                                                numValue === 0
-                                                            )
-                                                                return "";
-
-                                                            return cashType ===
-                                                                0
-                                                                ? `≈ ${formatNumber(
-                                                                      convertToSom(
-                                                                          numValue
-                                                                      )
-                                                                  )} UZS`
-                                                                : `≈ ${formatNumber(
-                                                                      convertToDollar(
-                                                                          numValue
-                                                                      )
-                                                                  )} $`;
-                                                        })()}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs">
-                                                    Sotish narxi ($)
-                                                </Label>
-                                                <input
-                                                    type="text"
-                                                    value={formatNumberWithSpaces(
-                                                        item.selling_price || ""
-                                                    )}
-                                                    onChange={(e) => {
-                                                        const value =
-                                                            e.target.value.replace(
-                                                                /\s/g,
-                                                                ""
-                                                            );
-                                                        if (
-                                                            value === "" ||
-                                                            value === "." ||
-                                                            /^\d*\.?\d*$/.test(
-                                                                value
-                                                            )
-                                                        ) {
-                                                            updateItem(
-                                                                index,
-                                                                "selling_price",
-                                                                value
-                                                            );
-                                                        }
-                                                    }}
-                                                    onBlur={(e) => {
-                                                        const value =
-                                                            e.target.value.replace(
-                                                                /\s/g,
-                                                                ""
-                                                            );
-                                                        if (
-                                                            value === "" ||
-                                                            value === "."
-                                                        ) {
-                                                            updateItem(
-                                                                index,
-                                                                "selling_price",
-                                                                0
-                                                            );
-                                                        } else {
-                                                            const parsed =
-                                                                parseFloat(
-                                                                    value
-                                                                );
-                                                            if (!isNaN(parsed))
-                                                                updateItem(
-                                                                    index,
-                                                                    "selling_price",
-                                                                    parsed
-                                                                );
-                                                        }
-                                                    }}
-                                                    placeholder="Sotish narxi ($)"
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                                {dollarRate > 0 && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        ≈{" "}
-                                                        {formatNumber(
-                                                            convertToSom(
-                                                                typeof item.selling_price ===
-                                                                    "number"
-                                                                    ? item.selling_price
-                                                                    : parseFloat(
-                                                                          item.selling_price ||
-                                                                              "0"
-                                                                      ) || 0
-                                                            )
-                                                        )}{" "}
-                                                        UZS
-                                                    </p>
-                                                )}
-                                            </div>
+                                            ) : (
+                                                <span className="text-5xl text-gray-400">
+                                                    📦
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Per item total & remove */}
-                                    <div className="flex items-center justify-between mt-2">
-                                        <div className="text-sm text-gray-600">
-                                            Jami:{" "}
-                                            {formatNumber(
-                                                getItemTotalSom(item)
-                                            )}{" "}
-                                            UZS
+                                    {/* O'rtada mahsulot ma'lumotlari */}
+                                    <div className="flex-1 w-1/3 h-[300px]  flex flex-col justify-start items-start">
+                                        <p className="text-base font-semibold text-gray-900 mb-2">
+                                            {item.product_id > 0
+                                                ? item.product_name
+                                                : "Mahsulot tanlanmagan"}
+                                        </p>
+                                        <div className="space-y-1">
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-medium">
+                                                    Barcode:
+                                                </span>{" "}
+                                                {item.barcode || "-"}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-medium">
+                                                    Kod:
+                                                </span>{" "}
+                                                {item.product_code || "-"}
+                                            </p>
+                                            {item.total_amount !==
+                                                undefined && (
+                                                <p className="text-sm text-gray-600">
+                                                    <span className="font-medium">
+                                                        Sklad:
+                                                    </span>{" "}
+                                                    {item.total_amount} dona
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* O'ngda inputlar va jami */}
+                                    <div className="flex-shrink-0 w-1/3  lg:w-80 space-y-3">
+                                        <div>
+                                            <Label className="text-xs">
+                                                Miqdor
+                                            </Label>
+                                            <Input
+                                                type="text"
+                                                value={
+                                                    item.amount
+                                                        ? formatNumber(
+                                                              item.amount
+                                                          )
+                                                        : ""
+                                                }
+                                                onChange={(e) => {
+                                                    const value =
+                                                        e.target.value.replace(
+                                                            /\s/g,
+                                                            ""
+                                                        );
+                                                    updateItem(
+                                                        index,
+                                                        "amount",
+                                                        parseInt(value) || 0
+                                                    );
+                                                }}
+                                                placeholder="Miqdor"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs">
+                                                Kirim narxi (
+                                                {cashType === 0 ? "$" : "UZS"})
+                                            </Label>
+                                            <input
+                                                type="text"
+                                                value={formatNumberWithSpaces(
+                                                    item.receipt_price || ""
+                                                )}
+                                                onChange={(e) => {
+                                                    const value =
+                                                        e.target.value.replace(
+                                                            /\s/g,
+                                                            ""
+                                                        );
+                                                    if (
+                                                        value === "" ||
+                                                        value === "." ||
+                                                        /^\d*\.?\d*$/.test(
+                                                            value
+                                                        )
+                                                    ) {
+                                                        updateItem(
+                                                            index,
+                                                            "receipt_price",
+                                                            value
+                                                        );
+                                                    }
+                                                }}
+                                                onBlur={(e) => {
+                                                    const value =
+                                                        e.target.value.replace(
+                                                            /\s/g,
+                                                            ""
+                                                        );
+                                                    if (
+                                                        value === "" ||
+                                                        value === "."
+                                                    ) {
+                                                        updateItem(
+                                                            index,
+                                                            "receipt_price",
+                                                            0
+                                                        );
+                                                    } else {
+                                                        const parsedValue =
+                                                            parseFloat(value);
+                                                        if (
+                                                            !isNaN(parsedValue)
+                                                        ) {
+                                                            updateItem(
+                                                                index,
+                                                                "receipt_price",
+                                                                parsedValue
+                                                            );
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder={`Kirim narxi (${
+                                                    cashType === 0 ? "$" : "UZS"
+                                                })`}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            {dollarRate > 0 && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {(() => {
+                                                        const value =
+                                                            item.receipt_price;
+                                                        if (
+                                                            value === "" ||
+                                                            value === "."
+                                                        )
+                                                            return "";
+
+                                                        const numValue =
+                                                            typeof value ===
+                                                            "string"
+                                                                ? parseFloat(
+                                                                      value
+                                                                  )
+                                                                : value;
+                                                        if (
+                                                            isNaN(numValue) ||
+                                                            numValue === 0
+                                                        )
+                                                            return "";
+
+                                                        return cashType === 0
+                                                            ? `≈ ${formatNumber(
+                                                                  convertToSom(
+                                                                      numValue
+                                                                  )
+                                                              )} UZS`
+                                                            : `≈ ${formatNumber(
+                                                                  convertToDollar(
+                                                                      numValue
+                                                                  )
+                                                              )} $`;
+                                                    })()}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs">
+                                                Sotish narxi ($)
+                                            </Label>
+                                            <input
+                                                type="text"
+                                                value={formatNumberWithSpaces(
+                                                    item.selling_price || ""
+                                                )}
+                                                onChange={(e) => {
+                                                    const value =
+                                                        e.target.value.replace(
+                                                            /\s/g,
+                                                            ""
+                                                        );
+                                                    if (
+                                                        value === "" ||
+                                                        value === "." ||
+                                                        /^\d*\.?\d*$/.test(
+                                                            value
+                                                        )
+                                                    ) {
+                                                        updateItem(
+                                                            index,
+                                                            "selling_price",
+                                                            value
+                                                        );
+                                                    }
+                                                }}
+                                                onBlur={(e) => {
+                                                    const value =
+                                                        e.target.value.replace(
+                                                            /\s/g,
+                                                            ""
+                                                        );
+                                                    if (
+                                                        value === "" ||
+                                                        value === "."
+                                                    ) {
+                                                        updateItem(
+                                                            index,
+                                                            "selling_price",
+                                                            0
+                                                        );
+                                                    } else {
+                                                        const parsed =
+                                                            parseFloat(value);
+                                                        if (!isNaN(parsed))
+                                                            updateItem(
+                                                                index,
+                                                                "selling_price",
+                                                                parsed
+                                                            );
+                                                    }
+                                                }}
+                                                placeholder="Sotish narxi ($)"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            {dollarRate > 0 && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    ≈{" "}
+                                                    {formatNumber(
+                                                        convertToSom(
+                                                            typeof item.selling_price ===
+                                                                "number"
+                                                                ? item.selling_price
+                                                                : parseFloat(
+                                                                      item.selling_price ||
+                                                                          "0"
+                                                                  ) || 0
+                                                        )
+                                                    )}{" "}
+                                                    UZS
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="pt-2 border-t border-gray-200">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium text-gray-700">
+                                                    Jami:
+                                                </span>
+                                                <span className="text-base font-bold text-blue-600">
+                                                    {formatNumber(
+                                                        getItemTotalSom(item)
+                                                    )}{" "}
+                                                    UZS
+                                                </span>
+                                            </div>
                                         </div>
                                         {items.length > 1 && (
                                             <Button
@@ -729,53 +710,47 @@ export default function AddArrivalModal({
                                                 onClick={() =>
                                                     removeItem(index)
                                                 }
-                                                className="bg-red-500 hover:bg-red-600 text-xs px-2 py-1"
+                                                className="w-full bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-sm"
                                             >
-                                                ✕
+                                                O'chirish
                                             </Button>
                                         )}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
 
-                    {/* Grand total */}
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                         <div className="text-base font-semibold text-gray-800">
                             Umumiy: {formatNumber(grandTotalSom)} UZS
                         </div>
-                    </div>
-
-                    <div className="flex justify-end items-center gap-3 pt-4">
-                        <Button
-                            type="button"
-                            onClick={handleClose}
-                            variant="outline"
-                            className="px-4 py-2 text-sm h-10 flex items-center justify-center"
-                        >
-                            Bekor qilish
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isLoading || !hasValidItems}
-                            className={`px-4 py-2 text-sm h-10 flex items-center justify-center ${
-                                hasValidItems && !isLoading
-                                    ? "bg-blue-500 hover:bg-blue-600"
-                                    : "bg-gray-400 cursor-not-allowed"
-                            }`}
-                        >
-                            {isLoading ? (
-                                <div className="flex items-center gap-2">
-                                    <span>Yuklanmoqda...</span>
-                                </div>
-                            ) : (
-                                "Kirim qo'shish"
-                            )}
-                        </Button>
+                        <div className="flex gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => navigate("/arrivals")}
+                                className="px-4 py-2 text-sm h-10 flex items-center justify-center"
+                            >
+                                Bekor qilish
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting || !hasValidItems}
+                                className={`px-4 py-2 text-sm h-10 flex items-center justify-center ${
+                                    hasValidItems && !isSubmitting
+                                        ? "bg-blue-500 hover:bg-blue-600"
+                                        : "bg-gray-400 cursor-not-allowed"
+                                }`}
+                            >
+                                {isSubmitting
+                                    ? "Yuklanmoqda..."
+                                    : "Kirim qo'shish"}
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </div>
-        </Modal>
+        </>
     );
 }

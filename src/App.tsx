@@ -24,6 +24,7 @@ import { SearchProvider } from "./context/SearchContext";
 import ClientList from "./pages/Clients/ClientList";
 import ProductList from "./pages/Products/ProductList";
 import ArrivalList from "./pages/Arrivals/ArrivalList";
+import AddArrivalPage from "./pages/Arrivals/AddArrivalModal";
 import POSPage from "./pages/POS/POSPage";
 import CheckPage from "./pages/Check/CheckPage";
 import CheckDebtorDetail from "./pages/Check/checkdebtordetail";
@@ -112,6 +113,10 @@ export default function App() {
 
                             <Route path="/products" element={<ProductList />} />
                             <Route path="/arrivals" element={<ArrivalList />} />
+                            <Route
+                                path="/arrivals/add"
+                                element={<AddArrivalPage />}
+                            />
                             <Route
                                 path="/daily-debts"
                                 element={<DailyDebtsPage />}

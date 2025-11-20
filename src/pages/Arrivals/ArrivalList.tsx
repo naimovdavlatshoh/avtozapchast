@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import { GetDataSimple, PostSimple } from "../../service/data";
-import { useModal } from "../../hooks/useModal";
 
 import Pagination from "../../components/common/Pagination.tsx";
 import { Toaster } from "react-hot-toast";
@@ -11,7 +11,6 @@ import Input from "../../components/form/input/InputField";
 
 import { MdClear } from "react-icons/md";
 import TableArrival from "./TableArrival.tsx";
-import AddArrivalModal from "./AddArrivalModal.tsx";
 
 export default function ArrivalList() {
     const [arrivals, setArrivals] = useState([]);
@@ -19,13 +18,12 @@ export default function ArrivalList() {
     const [totalPages, setTotalPages] = useState(1);
     const [searchKeyword, setSearchKeyword] = useState("");
     const [isSearching, setIsSearching] = useState(false);
-    const { isOpen, openModal, closeModal } = useModal();
-    const [status, setStatus] = useState(false);
     const [tableLoading, setTableLoading] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchArrivals();
-    }, [page, status]);
+    }, [page]);
 
     const fetchArrivals = async () => {
         setTableLoading(true);
@@ -72,10 +70,6 @@ export default function ArrivalList() {
         }
     };
 
-    const changeStatus = () => {
-        setStatus(!status);
-    };
-
     return (
         <>
             <PageBreadcrumb pageTitle="Kirimlar" />
@@ -107,7 +101,7 @@ export default function ArrivalList() {
                                 )}
                             </div>
                             <button
-                                onClick={openModal}
+                                onClick={() => navigate("/arrivals/add")}
                                 className="bg-blue-500 text-white px-5 py-3 rounded-md hover:bg-blue-600"
                             >
                                 + Kirim qo'shish
@@ -134,12 +128,6 @@ export default function ArrivalList() {
                 </ComponentCard>
             </div>
 
-            <AddArrivalModal
-                isOpen={isOpen}
-                onClose={closeModal}
-                changeStatus={changeStatus}
-                setResponse={() => {}}
-            />
             <Toaster position="top-right" reverseOrder={false} />
         </>
     );

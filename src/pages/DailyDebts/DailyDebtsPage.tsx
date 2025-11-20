@@ -12,7 +12,7 @@ import Loader from "../../components/ui/loader/Loader";
 import { formatDateOnly } from "../../utils/dateFormat";
 import { Link, useNavigate } from "react-router";
 import Input from "../../components/form/input/InputField";
-import { MdArrowBack, MdClear } from "react-icons/md";
+import { MdArrowBack, MdClear, MdDelete } from "react-icons/md";
 import { toast } from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
@@ -62,7 +62,7 @@ const DailyDebtsPage: React.FC = () => {
     const [selectedDebtId, setSelectedDebtId] = useState<number | null>(null);
     const [isClosing, setIsClosing] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
-    const [status, setStatus] = useState<string>("closed");
+    const [status, setStatus] = useState<string>("active");
     const navigate = useNavigate();
 
     const [page, setPage] = useState<number>(1);
@@ -250,27 +250,12 @@ const DailyDebtsPage: React.FC = () => {
 
             <div className="space-y-6">
                 <ComponentCard
-                    title="Vaqtincha qarzdorlik"
+                    title={status == "active" ? "Faol qarzdorliklar" : "Sotilganlar"}
                     desc={
                         <div className="flex gap-4 items-center justify-between">
                             <div className="flex gap-4 items-center">
                                 {/* Status Filter Tabs */}
                                 <div className="flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900">
-                                    <button
-                                        onClick={() => {
-                                            setStatus("closed");
-                                            setPage(1);
-                                            setIsSearching(false);
-                                            setSearchKeyword("");
-                                        }}
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                                            status === "closed"
-                                                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
-                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                                        }`}
-                                    >
-                                        Yopiq
-                                    </button>
                                     <button
                                         onClick={() => {
                                             setStatus("active");
@@ -280,11 +265,26 @@ const DailyDebtsPage: React.FC = () => {
                                         }}
                                         className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                                             status === "active"
-                                                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                                                ? "bg-blue-500  text-white"
                                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                         }`}
                                     >
                                         Faol
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setStatus("closed");
+                                            setPage(1);
+                                            setIsSearching(false);
+                                            setSearchKeyword("");
+                                        }}
+                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                            status === "closed"
+                                                ? "bg-blue-500  text-white"
+                                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                        }`}
+                                    >
+                                        Sotilganlar
                                     </button>
                                 </div>
 
@@ -465,13 +465,13 @@ const DailyDebtsPage: React.FC = () => {
                                                                             row.daily_debt_id
                                                                         )
                                                                     }
-                                                                    className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-red-600 bg-red-100 rounded hover:bg-red-200 transition-colors"
+                                                                    className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-orange-600 bg-orange-100 rounded hover:bg-orange-200 transition-colors"
                                                                     title="Yopish"
                                                                 >
                                                                     Yopish
                                                                 </button>
                                                             )}
-                                                            <Link
+                                                            {/* <Link
                                                                 to={
                                                                     localStorage.getItem(
                                                                         "role_id"
@@ -483,7 +483,7 @@ const DailyDebtsPage: React.FC = () => {
                                                                 title="Mahsulot qo'shish"
                                                             >
                                                                 + Qo'shish
-                                                            </Link>
+                                                            </Link> */}
                                                             <button
                                                                 onClick={() =>
                                                                     handleDeleteDebtClick(
@@ -493,7 +493,9 @@ const DailyDebtsPage: React.FC = () => {
                                                                 className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-red-600 bg-red-100 rounded hover:bg-red-200 transition-colors"
                                                                 title="O'chirish"
                                                             >
-                                                                O'chirish
+                                                                <MdDelete
+                                                                    size={16}
+                                                                />
                                                             </button>
                                                         </div>
                                                     </td>

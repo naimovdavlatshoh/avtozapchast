@@ -183,14 +183,14 @@ const CheckDailyDebt: React.FC = () => {
                             </span>
                         </div>
                     )} */}
-                    {checkData.exchange_rate > 0 && (
+                    {/* {checkData.exchange_rate > 0 && (
                         <div className="flex justify-between text-xs text-gray-500">
                             <span>Kurs:</span>
                             <span>
                                 {formatNumber(checkData.exchange_rate)} so'm
                             </span>
                         </div>
-                    )}
+                    )} */}
                 </div>
 
                 {checkData.comments && (

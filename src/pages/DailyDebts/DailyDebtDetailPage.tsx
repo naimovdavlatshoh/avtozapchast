@@ -93,11 +93,15 @@ const DailyDebtDetailPage: React.FC = () => {
 
     return (
         <>
-            <div className="space-y-6">
+            <div
+                className={`space-y-6 ${
+                    localStorage.getItem("role_id") === "2" ? "p-5" : ""
+                }`}
+            >
                 <div className="flex items-center justify-between gap-5 mb-6">
                     <div className="flex items-center gap-5">
                         <button
-                            onClick={() => navigate("/daily-debts")}
+                            onClick={() => navigate(localStorage.getItem("role_id") === "1" ? "/daily-debts" : "/operator-daily-debts")}
                             className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors"
                         >
                             <MdArrowBack className="text-xl" />

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import EditProductModal from "./EditProductModal";
-import { UpdateProductPrice, GetDataSimple } from "../../service/data";
+import {
+    UpdateProductPrice,
+    GetDataSimple,
+    PostDataTokenJson,
+} from "../../service/data";
 import { formatNumber } from "../../utils/numberFormat";
 import { formatDate } from "../../utils/dateFormat";
 import { Modal } from "../../components/ui/modal";
@@ -43,8 +47,13 @@ const TableProduct: React.FC<TableProductProps> = ({
     const [editingProductId, setEditingProductId] = useState<number | null>(
         null
     );
+    const [editingQuantityProductId, setEditingQuantityProductId] = useState<
+        number | null
+    >(null);
     const [priceInputValue, setPriceInputValue] = useState<string>("");
+    const [quantityInputValue, setQuantityInputValue] = useState<string>("");
     const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
+    const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
     const [dollarRate, setDollarRate] = useState<number>(0);
     const [isLoadingRate, setIsLoadingRate] = useState<boolean>(false);
 
@@ -174,9 +183,19 @@ const TableProduct: React.FC<TableProductProps> = ({
         setPriceInputValue(product.selling_price.toString());
     };
 
+    const handleEditQuantity = (product: Product) => {
+        setEditingQuantityProductId(product.product_id);
+        setQuantityInputValue(product.total_amount.toString());
+    };
+
     const handleCancelEditPrice = () => {
         setEditingProductId(null);
         setPriceInputValue("");
+    };
+
+    const handleCancelEditQuantity = () => {
+        setEditingQuantityProductId(null);
+        setQuantityInputValue("");
     };
 
     const handleSavePrice = async () => {
@@ -203,6 +222,34 @@ const TableProduct: React.FC<TableProductProps> = ({
         }
     };
 
+    const handleSaveQuantity = async () => {
+        if (!editingQuantityProductId || !quantityInputValue) return;
+
+        const newAmount = parseInt(quantityInputValue, 10);
+        if (isNaN(newAmount) || newAmount < 0) {
+            toast.error("Iltimos, to'g'ri miqdor kiriting");
+            return;
+        }
+
+        setIsUpdatingQuantity(true);
+        try {
+            await PostDataTokenJson("api/products/update/amount", {
+                product_id: editingQuantityProductId,
+                amount: newAmount,
+            });
+            changeStatus();
+            handleCancelEditQuantity();
+            toast.success("Mahsulot miqdori muvaffaqiyatli o'zgartirildi!");
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.error ||
+                    "Mahsulot miqdorini o'zgartirishda xatolik"
+            );
+        } finally {
+            setIsUpdatingQuantity(false);
+        }
+    };
+
     return (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
             <div className="max-w-full overflow-x-auto">
@@ -224,13 +271,13 @@ const TableProduct: React.FC<TableProductProps> = ({
                             <th scope="col" className="px-6 py-3">
                                 Miqdor
                             </th>
-                            <th scope="col" className="px-6 py-3">
-                                Sotish narxi ($)
+                            <th scope="col" className="px-6 py-3 w-[130px]">
+                                Kirim narxi
                             </th>
                             <th scope="col" className="px-6 py-3">
                                 <div className="flex items-center gap-2">
                                     <span>
-                                        Sotish narxi (so'm)
+                                        Sotish narxi
                                         {dollarRate > 0 && (
                                             <span className="text-xs text-gray-500 ml-1">
                                                 (1$ = {formatNumber(dollarRate)}
@@ -364,7 +411,138 @@ const TableProduct: React.FC<TableProductProps> = ({
                                         {product.product_code}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {product.total_amount}
+                                        {editingQuantityProductId ===
+                                        product.product_id ? (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={quantityInputValue}
+                                                    onChange={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\s/g,
+                                                                ""
+                                                            );
+                                                        setQuantityInputValue(
+                                                            value
+                                                        );
+                                                    }}
+                                                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Miqdor"
+                                                />
+                                                <button
+                                                    onClick={handleSaveQuantity}
+                                                    disabled={
+                                                        isUpdatingQuantity
+                                                    }
+                                                    className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                                                    title="Saqlash"
+                                                >
+                                                    {isUpdatingQuantity ? (
+                                                        <svg
+                                                            className="w-4 h-4 animate-spin"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <circle
+                                                                className="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                strokeWidth="4"
+                                                            ></circle>
+                                                            <path
+                                                                className="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                            ></path>
+                                                        </svg>
+                                                    ) : (
+                                                        <svg
+                                                            className="w-4 h-4"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M5 13l4 4L19 7"
+                                                            />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={
+                                                        handleCancelEditQuantity
+                                                    }
+                                                    className="text-red-600 hover:text-red-800"
+                                                    title="Bekor qilish"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M6 18L18 6M6 6l12 12"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <span>
+                                                    {product.total_amount}
+                                                </span>
+                                                <button
+                                                    onClick={() =>
+                                                        handleEditQuantity(
+                                                            product
+                                                        )
+                                                    }
+                                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                                    title="Miqdorni tahrirlash"
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col">
+                                            <span>
+                                                {product.last_receipt_price} $
+                                            </span>
+                                            <span className="text-green-600 font-medium">
+                                                {product.receipt_price_uzs
+                                                    ? formatNumber(
+                                                          parseFloat(
+                                                              product.receipt_price_uzs
+                                                          )
+                                                      )
+                                                    : "-"}{" "}
+                                                сум
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         {editingProductId ===
@@ -372,9 +550,7 @@ const TableProduct: React.FC<TableProductProps> = ({
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     type="text"
-                                                    value={
-                                                        priceInputValue
-                                                    }
+                                                    value={priceInputValue}
                                                     onChange={(e) => {
                                                         const value =
                                                             e.target.value.replace(
@@ -470,13 +646,27 @@ const TableProduct: React.FC<TableProductProps> = ({
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-2">
-                                                <span>
-                                                    {
-                                                        product.selling_price
-                                                    }{" "}
-                                                    $
-                                                </span>
+                                            <div className="flex items-start gap-2">
+                                                <div className="flex flex-col">
+                                                    <span>
+                                                        {product.selling_price}{" "}
+                                                        $
+                                                    </span>
+                                                    {dollarRate > 0 ? (
+                                                        <span className="text-green-600 font-medium">
+                                                            {formatNumber(
+                                                                convertUsdToUzs(
+                                                                    product.selling_price
+                                                                )
+                                                            )}{" "}
+                                                            сум
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm">
+                                                            Kurs yuklanmoqda...
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <button
                                                     onClick={() =>
                                                         handleEditPrice(product)
@@ -499,22 +689,6 @@ const TableProduct: React.FC<TableProductProps> = ({
                                                     </svg>
                                                 </button>
                                             </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {dollarRate > 0 ? (
-                                            <span className="text-green-600 font-medium">
-                                                {formatNumber(
-                                                    convertUsdToUzs(
-                                                        product.selling_price
-                                                    )
-                                                )}{" "}
-                                                сум
-                                            </span>
-                                        ) : (
-                                            <span className="text-gray-400">
-                                                Kurs yuklanmoqda...
-                                            </span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
