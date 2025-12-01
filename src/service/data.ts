@@ -4,7 +4,7 @@ import { handleAuthError } from "../utils/authUtils";
 // Get BASE_URL from environment variables
 export const BASE_URL =
     import.meta.env.VITE_BASE_URL || "https://apistore.afandicloud.uz/";
-    // import.meta.env.VITE_BASE_URL || "https://azizapi.argon.uz/";
+// import.meta.env.VITE_BASE_URL || "https://azizapi.argon.uz/";
 
 axios.interceptors.request.use(
     (config) => {
@@ -314,4 +314,46 @@ export const DeleteDailyDebt = async (dailyDebtId: number) => {
         {}
     );
     return response;
+};
+
+// Categories API functions
+export const GetCategoriesList = async (
+    page: number = 1,
+    limit: number = 10
+) => {
+    const response = await GetDataSimple(
+        `api/categories/list?page=${page}&limit=${limit}`
+    );
+    return response;
+};
+
+export const CreateCategory = async (categoryData: {
+    category_name: string;
+}) => {
+    const response = await PostDataTokenJson(
+        "api/categories/create",
+        categoryData
+    );
+    return response;
+};
+
+export const UpdateCategory = async (
+    categoryId: number,
+    categoryData: {
+        category_name: string;
+    }
+) => {
+    const response = await PostDataTokenJson(
+        `api/categories/update/${categoryId}`,
+        categoryData
+    );
+    return response;
+};
+
+export const SearchCategories = async (keyword: string) => {
+    const response = await PostSimple(
+        `api/categories/search?keyword=${encodeURIComponent(keyword)}`,
+        {}
+    );
+    return response.data;
 };

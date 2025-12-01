@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router";
 // import { IoDocumentLockOutline } from "react-icons/io5";
 // import { MdPendingActions } from "react-icons/md";
 import { GrMoney } from "react-icons/gr";
-// import { TbCategory } from "react-icons/tb";
+import { TbCategory } from "react-icons/tb";
 // import { TbFaceId } from "react-icons/tb";
 import { SiMaterialformkdocs } from "react-icons/si";
 // import { GrUserWorker } from "react-icons/gr";
@@ -61,6 +61,12 @@ const navItems: NavItem[] = [
         name: "Mahsulotlar",
         icon: <SiMaterialformkdocs />,
         path: "/products",
+        roles: [1, 2], // Admin va Director
+    },
+    {
+        name: "Kategoriyalar",
+        icon: <TbCategory />,
+        path: "/categories",
         roles: [1, 2], // Admin va Director
     },
     {

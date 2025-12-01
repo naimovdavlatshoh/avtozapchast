@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Modal } from "../../components/ui/modal";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
+import Select from "../../components/form/Select";
 import {
     PostDataTokenJson,
     PostDataToken,
     GetDataSimple,
+    GetCategoriesList,
+    SearchCategories,
 } from "../../service/data";
 import { toast } from "react-hot-toast";
 
@@ -24,7 +27,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 }) => {
     const [productName, setProductName] = useState("");
     const [productCode, setProductCode] = useState("");
-    const [description, setDescription] = useState("");
+    const [categoryId, setCategoryId] = useState<string>("");
     const [amount, setAmount] = useState<number>(0);
     const [receiptPrice, setReceiptPrice] = useState<number>(0);
     const [sellingPrice, setSellingPrice] = useState<number>(0);
@@ -42,6 +45,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     }>({ type: null, message: "" });
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [categoryOptions, setCategoryOptions] = useState<
+        { value: number; label: string }[]
+    >([]);
+    const [isSearchingCategories, setIsSearchingCategories] = useState(false);
 
     // Helper functions for number formatting
     const formatNumberWithSpaces = (num: number): string => {
@@ -81,10 +88,53 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         return formatNumberWithSpaces(sumAmount);
     };
 
-    // Fetch USD rate when modal opens
+    // Fetch categories when modal opens
+    const fetchCategories = async (page: number = 1) => {
+        try {
+            const response = await GetCategoriesList(page, 50);
+            if (response?.result) {
+                const options = response.result.map((cat: any) => ({
+                    value: cat.id || cat.category_id,
+                    label: cat.category_name,
+                }));
+                setCategoryOptions(options);
+            }
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    };
+
+    // Search categories
+    const handleCategorySearch = async (keyword: string) => {
+        if (keyword.trim().length < 3) {
+            // If less than 3 characters, fetch default list
+            await fetchCategories();
+            return;
+        }
+        setIsSearchingCategories(true);
+        try {
+            const response = await SearchCategories(keyword);
+            if (response?.result) {
+                const options = response.result.map((cat: any) => ({
+                    value: cat.id || cat.category_id,
+                    label: cat.category_name,
+                }));
+                setCategoryOptions(options);
+            }
+        } catch (error) {
+            console.error("Error searching categories:", error);
+        } finally {
+            setIsSearchingCategories(false);
+        }
+    };
+
+    // Fetch USD rate and categories when modal opens
     useEffect(() => {
-        if (isOpen && usdRate === 0) {
-            fetchUSDRate();
+        if (isOpen) {
+            if (usdRate === 0) {
+                fetchUSDRate();
+            }
+            fetchCategories();
         }
     }, [isOpen]);
 
@@ -250,8 +300,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                 payload.product_code = productCode.trim();
             }
 
-            if (description.trim()) {
-                payload.description = description.trim();
+            if (categoryId) {
+                payload.category_id = parseInt(categoryId);
             }
 
             if (imageId) {
@@ -273,7 +323,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                 toast.success("Mahsulot muvaffaqiyatli qo'shildi");
                 setProductName("");
                 setProductCode("");
-                setDescription("");
+                setCategoryId("");
                 setAmount(0);
                 setReceiptPrice(0);
                 setSellingPrice(0);
@@ -301,7 +351,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     const handleClose = () => {
         setProductName("");
         setProductCode("");
-        setDescription("");
+        setCategoryId("");
         setAmount(0);
         setReceiptPrice(0);
         setSellingPrice(0);
@@ -354,14 +404,15 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                 </div>
 
                 <div>
-                    <Label htmlFor="description">Tavsif</Label>
-                    <textarea
-                        id="description"
-                        placeholder="Mahsulot tavsifi (ixtiyoriy)"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        rows={3}
+                    <Label htmlFor="category">Kategoriya</Label>
+                    <Select
+                        options={categoryOptions}
+                        placeholder="Kategoriya tanlang (ixtiyoriy)"
+                        onChange={(value) => setCategoryId(value)}
+                        searchable={true}
+                        onSearch={handleCategorySearch}
+                        searching={isSearchingCategories}
+                        className="dark:bg-gray-700"
                     />
                 </div>
 

@@ -25,6 +25,7 @@ import ClientList from "./pages/Clients/ClientList";
 import ProductList from "./pages/Products/ProductList";
 import ArrivalList from "./pages/Arrivals/ArrivalList";
 import AddArrivalPage from "./pages/Arrivals/AddArrivalModal";
+import CategoriesList from "./pages/Categories/CategoriesList";
 import POSPage from "./pages/POS/POSPage";
 import CheckPage from "./pages/Check/CheckPage";
 import CheckDebtorDetail from "./pages/Check/checkdebtordetail";
@@ -94,7 +95,6 @@ export default function App() {
                         >
                             <Route index path="/" element={<ClientList />} />
 
-                            {/* Others Page */}
                             <Route path="/profile" element={<UserProfiles />} />
                             <Route path="/calendar" element={<Calendar />} />
                             <Route path="/blank" element={<Blank />} />
@@ -112,6 +112,10 @@ export default function App() {
                             />
 
                             <Route path="/products" element={<ProductList />} />
+                            <Route
+                                path="/categories"
+                                element={<CategoriesList />}
+                            />
                             <Route path="/arrivals" element={<ArrivalList />} />
                             <Route
                                 path="/arrivals/add"

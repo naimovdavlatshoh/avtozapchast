@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "../../components/ui/modal";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
+import Select from "../../components/form/Select";
 import {
     PostDataTokenJson,
     PostDataToken,
     GetDataSimple,
     GetDataSimpleBlob,
+    GetCategoriesList,
+    SearchCategories,
 } from "../../service/data";
 import { toast } from "react-hot-toast";
 
@@ -26,6 +29,7 @@ interface Product {
     current_dollar_rate?: number;
     arrival_dollar_rate?: number;
     image_id?: number;
+    category_id?: number;
     created_at?: string;
     updated_at?: string;
     image_path?: string;
@@ -46,7 +50,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 }) => {
     const [productName, setProductName] = useState("");
     const [productCode, setProductCode] = useState("");
-    const [description, setDescription] = useState("");
+    const [categoryId, setCategoryId] = useState<string>("");
     const [productImage, setProductImage] = useState("");
     const [usdRate, setUsdRate] = useState<number>(0);
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -59,6 +63,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         message: string;
     }>({ type: null, message: "" });
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [categoryOptions, setCategoryOptions] = useState<
+        { value: number; label: string }[]
+    >([]);
+    const [isSearchingCategories, setIsSearchingCategories] = useState(false);
 
     // Fetch USD exchange rate from your API
     const fetchUSDRate = async () => {
@@ -74,10 +82,57 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         }
     };
 
-    // Fetch USD rate when modal opens
+    // Fetch categories when modal opens
+    const fetchCategories = async (page: number = 1) => {
+        try {
+            const response = await GetCategoriesList(page, 50);
+            if (response?.result) {
+                const options = response.result.map((cat: any) => ({
+                    value: cat.id || cat.category_id,
+                    label: cat.category_name,
+                }));
+                setCategoryOptions(options);
+                // If product has category_id, ensure it's set after categories are loaded
+                if (product?.category_id && !categoryId) {
+                    setCategoryId(String(product.category_id));
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    };
+
+    // Search categories
+    const handleCategorySearch = async (keyword: string) => {
+        if (keyword.trim().length < 3) {
+            // If less than 3 characters, fetch default list
+            await fetchCategories();
+            return;
+        }
+        setIsSearchingCategories(true);
+        try {
+            const response = await SearchCategories(keyword);
+            if (response?.result) {
+                const options = response.result.map((cat: any) => ({
+                    value: cat.id || cat.category_id,
+                    label: cat.category_name,
+                }));
+                setCategoryOptions(options);
+            }
+        } catch (error) {
+            console.error("Error searching categories:", error);
+        } finally {
+            setIsSearchingCategories(false);
+        }
+    };
+
+    // Fetch USD rate and categories when modal opens
     useEffect(() => {
-        if (isOpen && usdRate === 0) {
-            fetchUSDRate();
+        if (isOpen) {
+            if (usdRate === 0) {
+                fetchUSDRate();
+            }
+            fetchCategories();
         }
     }, [isOpen]);
 
@@ -92,7 +147,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     : "");
             setProductCode(codeValue);
             setProductImage(product.image_path || "");
-            setDescription(product.description || "");
+            // Set category_id if available
+            if (product.category_id) {
+                setCategoryId(String(product.category_id));
+            } else {
+                setCategoryId("");
+            }
 
             // dollar rate from payload if present
             const rateFromPayload =
@@ -197,8 +257,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                 payload.product_code = productCode.trim();
             }
 
-            if (description.trim()) {
-                payload.description = description.trim();
+            if (categoryId) {
+                payload.category_id = parseInt(categoryId);
             }
 
             payload.cash_type = 0; // Static value as requested
@@ -239,7 +299,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         setNewImageId(null);
         setProductName("");
         setProductCode("");
-        setDescription("");
+        setCategoryId("");
         setImageUploadStatus({ type: null, message: "" });
         setIsUploadingImage(false);
         onClose();
@@ -278,14 +338,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                 </div>
 
                 <div>
-                    <Label htmlFor="description">Tavsif</Label>
-                    <textarea
-                        id="description"
-                        placeholder="Mahsulot tavsifi (ixtiyoriy)"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        rows={3}
+                    <Label htmlFor="category">Kategoriya</Label>
+                    <Select
+                        key={`category-select-${product.product_id}-${categoryId}`}
+                        options={categoryOptions}
+                        placeholder="Kategoriya tanlang (ixtiyoriy)"
+                        onChange={(value) => setCategoryId(value)}
+                        searchable={true}
+                        onSearch={handleCategorySearch}
+                        searching={isSearchingCategories}
+                        defaultValue={categoryId}
+                        className="dark:bg-gray-700"
                     />
                 </div>
 

@@ -43,6 +43,13 @@ const Select: React.FC<SelectProps> = ({
     });
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    // Update selectedValue when defaultValue changes
+    useEffect(() => {
+        if (defaultValue !== undefined && defaultValue !== selectedValue) {
+            setSelectedValue(defaultValue);
+        }
+    }, [defaultValue]);
+
     // Update filtered options when options or search term change
     useEffect(() => {
         if (!options || options.length === 0) {

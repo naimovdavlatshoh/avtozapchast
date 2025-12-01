@@ -1,13 +1,19 @@
 import { useEffect, useState, useRef } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
-import { GetDataSimple, PostSimple } from "../../service/data";
+import {
+    GetDataSimple,
+    PostSimple,
+    GetCategoriesList,
+    SearchCategories,
+} from "../../service/data";
 import { useModal } from "../../hooks/useModal";
 
 import Pagination from "../../components/common/Pagination.tsx";
 import { Toaster } from "react-hot-toast";
 import Loader from "../../components/ui/loader/Loader.tsx";
 import Input from "../../components/form/input/InputField";
+import Select from "../../components/form/Select";
 import TableProduct from "./TableProduct.tsx";
 import AddProductModal from "./AddProductModal.tsx";
 import { MdClear } from "react-icons/md";
@@ -21,15 +27,25 @@ export default function ProductList() {
     const { isOpen, openModal, closeModal } = useModal();
     const [status, setStatus] = useState(false);
     const [tableLoading, setTableLoading] = useState(false);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+    const [categoryOptions, setCategoryOptions] = useState<
+        { value: number; label: string }[]
+    >([]);
+    const [isSearchingCategories, setIsSearchingCategories] = useState(false);
 
     // Barcode scanner uchun
     const [barcodeInput, setBarcodeInput] = useState("");
     const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
+    // Fetch categories on mount
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
     useEffect(() => {
         fetchProducts();
-    }, [page, status]);
+    }, [page, status, selectedCategoryId]);
 
     // Barcode scanner event listener
     useEffect(() => {
@@ -86,12 +102,51 @@ export default function ProductList() {
         };
     }, [barcodeInput]);
 
+    const fetchCategories = async (page: number = 1) => {
+        try {
+            const response = await GetCategoriesList(page, 50);
+            if (response?.result) {
+                const options = response.result.map((cat: any) => ({
+                    value: cat.id || cat.category_id,
+                    label: cat.category_name,
+                }));
+                setCategoryOptions(options);
+            }
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    };
+
+    const handleCategorySearch = async (keyword: string) => {
+        if (keyword.trim().length < 3) {
+            await fetchCategories();
+            return;
+        }
+        setIsSearchingCategories(true);
+        try {
+            const response = await SearchCategories(keyword);
+            if (response?.result) {
+                const options = response.result.map((cat: any) => ({
+                    value: cat.id || cat.category_id,
+                    label: cat.category_name,
+                }));
+                setCategoryOptions(options);
+            }
+        } catch (error) {
+            console.error("Error searching categories:", error);
+        } finally {
+            setIsSearchingCategories(false);
+        }
+    };
+
     const fetchProducts = async () => {
         setTableLoading(true);
         try {
-            const res = await GetDataSimple(
-                `api/products/list?page=${page}&limit=30`
-            );
+            let url = `api/products/list?page=${page}&limit=30`;
+            if (selectedCategoryId) {
+                url += `&category_id=${selectedCategoryId}`;
+            }
+            const res = await GetDataSimple(url);
             setProducts(res?.result || []);
             setTotalPages(res?.pages || 1);
         } catch (error) {
@@ -119,9 +174,13 @@ export default function ProductList() {
         setTableLoading(true);
         setIsSearching(true);
         try {
-            const res = await PostSimple(
-                `api/products/search?keyword=${encodeURIComponent(keyword)}`
-            );
+            let url = `api/products/search?keyword=${encodeURIComponent(
+                keyword
+            )}`;
+            if (selectedCategoryId) {
+                url += `&category_id=${selectedCategoryId}`;
+            }
+            const res = await PostSimple(url);
             setProducts(res?.data?.result || []);
             setTotalPages(1); // Search natijalari uchun pagination yo'q
         } catch (error) {
@@ -144,6 +203,21 @@ export default function ProductList() {
                     desc={
                         <div className="flex gap-4 items-center">
                             <div className="flex gap-2">
+                                <div className="w-48">
+                                    <Select
+                                        options={categoryOptions}
+                                        placeholder="Kategoriya tanlang"
+                                        onChange={(value) => {
+                                            setSelectedCategoryId(value);
+                                            setPage(1); // Reset to first page when category changes
+                                        }}
+                                        searchable={true}
+                                        onSearch={handleCategorySearch}
+                                        searching={isSearchingCategories}
+                                        defaultValue={selectedCategoryId}
+                                        className="dark:bg-gray-700"
+                                    />
+                                </div>
                                 <div className="relative">
                                     <Input
                                         ref={searchInputRef}
@@ -159,12 +233,14 @@ export default function ProductList() {
                                         </div>
                                     )}
                                 </div>
-                                {isSearching && (
+                                {(isSearching || selectedCategoryId) && (
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setSearchKeyword("");
+                                            setSelectedCategoryId("");
                                             setIsSearching(false);
+                                            setPage(1);
                                             fetchProducts();
                                         }}
                                         className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"

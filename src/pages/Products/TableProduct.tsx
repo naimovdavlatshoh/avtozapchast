@@ -19,6 +19,7 @@ interface Product {
     selling_price: number;
     barcode: number;
     product_code: string;
+    category_name?: string;
     description?: string;
     image_id?: number;
     created_at?: string;
@@ -269,6 +270,9 @@ const TableProduct: React.FC<TableProductProps> = ({
                                 Mahsulot kodi
                             </th>
                             <th scope="col" className="px-6 py-3">
+                                Kategoriya
+                            </th>
+                            <th scope="col" className="px-6 py-3">
                                 Miqdor
                             </th>
                             <th scope="col" className="px-6 py-3 w-[130px]">
@@ -330,23 +334,6 @@ const TableProduct: React.FC<TableProductProps> = ({
                                 </div>
                             </th>
                             <th scope="col" className="px-6 py-3">
-                                <div className="flex items-center justify-center">
-                                    <svg
-                                        className="w-4 h-4 text-gray-600"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                                        />
-                                    </svg>
-                                </div>
-                            </th>
-                            <th scope="col" className="px-6 py-3">
                                 Yaratilgan sana
                             </th>
                             <th scope="col" className="px-6 py-3">
@@ -368,7 +355,7 @@ const TableProduct: React.FC<TableProductProps> = ({
                             products.map((product, index) => (
                                 <tr
                                     key={product.product_id}
-                                    className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                    className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600`}
                                 >
                                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {index + 1}
@@ -409,6 +396,9 @@ const TableProduct: React.FC<TableProductProps> = ({
                                     </td>
                                     <td className="px-6 py-4">
                                         {product.product_code}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {product.category_name || "-"}
                                     </td>
                                     <td className="px-6 py-4">
                                         {editingQuantityProductId ===
@@ -498,7 +488,7 @@ const TableProduct: React.FC<TableProductProps> = ({
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2">
-                                                <span>
+                                                <span className={`${product.total_amount < 2 ? "text-red-500" : "text-green-700"}`}>
                                                     {product.total_amount}
                                                 </span>
                                                 <button
@@ -690,41 +680,6 @@ const TableProduct: React.FC<TableProductProps> = ({
                                                 </button>
                                             </div>
                                         )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center">
-                                            {product.description ? (
-                                                <div className="relative group">
-                                                    <svg
-                                                        className="w-5 h-5 text-blue-600 hover:text-blue-800 cursor-pointer transition-colors"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={2}
-                                                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                                                        />
-                                                    </svg>
-                                                    {/* Tooltip */}
-                                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 max-w-xs">
-                                                        <div className="whitespace-normal break-words">
-                                                            {
-                                                                product.description
-                                                            }
-                                                        </div>
-                                                        {/* Arrow */}
-                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-400 text-sm">
-                                                    -
-                                                </span>
-                                            )}
-                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         {formatDate(product.created_at || "")}
