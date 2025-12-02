@@ -203,7 +203,7 @@ export default function ProductList() {
                     desc={
                         <div className="flex gap-4 items-center">
                             <div className="flex gap-2">
-                                <div className="w-48">
+                                <div className="max-w-80">
                                     <Select
                                         options={categoryOptions}
                                         placeholder="Kategoriya tanlang"
