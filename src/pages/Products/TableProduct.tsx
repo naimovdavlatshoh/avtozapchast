@@ -355,7 +355,9 @@ const TableProduct: React.FC<TableProductProps> = ({
                             products.map((product, index) => (
                                 <tr
                                     key={product.product_id}
-                                    className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600`}
+                                    className={` ${
+                                        product.total_amount < 2 && "bg-red-100 text-red-500"
+                                    } border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600`}
                                 >
                                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {index + 1}
@@ -488,7 +490,7 @@ const TableProduct: React.FC<TableProductProps> = ({
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2">
-                                                <span className={`${product.total_amount < 2 ? "text-red-500" : "text-green-700"}`}>
+                                                <span>
                                                     {product.total_amount}
                                                 </span>
                                                 <button

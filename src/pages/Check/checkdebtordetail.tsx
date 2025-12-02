@@ -101,7 +101,7 @@ const CheckDebtorDetail: React.FC = () => {
                         EVRO BUKSER
                     </h1>
                     <h2 className="text-sm font-semibold text-gray-700 mb-4">
-                        Чек продажи
+                        {saleData.isDebt ? "Чек продажи в долг" : "Чек продажи"}
                     </h2>
                 </div>
 

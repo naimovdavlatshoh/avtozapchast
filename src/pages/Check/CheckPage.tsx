@@ -108,7 +108,7 @@ const CheckPage: React.FC = () => {
                         EVRO BUKSER
                     </h1>
                     <h2 className="text-sm font-semibold text-gray-700 mb-4">
-                        Чек продажи
+                        {saleData.isDebt ? "Чек продажи в долг" : "Чек продажи"}
                     </h2>
                 </div>
 
@@ -119,16 +119,16 @@ const CheckPage: React.FC = () => {
                         <span className="font-medium">test</span>
                     </div> */}
                     <div className="flex text-sm justify-between">
+                        <span className="font-bold">Телефон:</span>
+                        <span className="font-bold">+998 91 404 79 97</span>
+                    </div>
+                    <div className="flex text-sm justify-between">
                         <span className="text-sm font-bold">Номер заказа:</span>
                         <span className="font-bold">#{saleData.saleId}</span>
                     </div>
                     <div className="flex text-sm justify-between">
                         <span className="font-bold">Дата:</span>
                         <span className="font-bold">{saleData.timestamp}</span>
-                    </div>
-                    <div className="flex text-sm justify-between">
-                        <span className="font-bold">Телефон:</span>
-                        <span className="font-bold">+998 91 404 79 97</span>
                     </div>
 
                     {/* Qarz ma'lumotlari */}
