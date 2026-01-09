@@ -82,6 +82,7 @@ const POSPage: React.FC = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [imageUrls, setImageUrls] = useState<{ [key: number]: string }>({});
     const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
     const [isDebt, setIsDebt] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -184,15 +185,18 @@ const POSPage: React.FC = () => {
         };
     }, [barcodeInput]);
 
-    // Faqat search qilganda mahsulotlarni yuklash
+    // Cleanup debounce timeout on unmount
     useEffect(() => {
-        if (isSearching && searchKeyword.trim()) {
-            handleSearch();
-        }
-    }, [page, isSearching, searchKeyword]);
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+    }, []);
 
-    const handleSearch = async () => {
-        if (!searchKeyword.trim() || searchKeyword.trim().length < 3) {
+    const handleSearch = async (keyword?: string) => {
+        const searchTerm = keyword || searchKeyword;
+        if (!searchTerm.trim() || searchTerm.trim().length < 3) {
             setIsSearching(false);
             setPage(1);
             setProducts([]);
@@ -202,9 +206,7 @@ const POSPage: React.FC = () => {
         setIsLoading(true);
         try {
             const response = await PostSimple(
-                `api/products/search?keyword=${encodeURIComponent(
-                    searchKeyword
-                )}`
+                `api/products/search?keyword=${encodeURIComponent(searchTerm)}`
             );
             console.log("=== SEARCH RESPONSE ===");
             console.log("Full response:", response);
@@ -218,15 +220,26 @@ const POSPage: React.FC = () => {
                 setTotalPages(1);
             }
         } catch (error: any) {
+            setIsLoading(false);
             toast.error(error.response?.data?.error || "Qidiruvda xatolik");
         }
     };
 
     const handleSearchChange = (value: string) => {
         setSearchKeyword(value);
+
+        // Oldingi debounce timeout ni bekor qilish
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
         if (value.trim().length > 3) {
             setIsSearching(true);
             setPage(1);
+            // 0.5 sekund kechikish bilan search qilish - value ni to'g'ridan-to'g'ri uzatish
+            searchDebounceRef.current = setTimeout(() => {
+                handleSearch(value);
+            }, 500);
         } else if (value.trim().length === 0) {
             setIsSearching(false);
             setPage(1);
@@ -239,30 +252,38 @@ const POSPage: React.FC = () => {
     };
 
     const handleBarcodeSearch = async (barcode: string) => {
-        try {
-            const response = await PostSimple(
-                `api/products/search?keyword=${encodeURIComponent(barcode)}`
-            );
-            console.log("=== BARCODE SEARCH RESPONSE ===");
-            console.log("Barcode:", barcode);
-            console.log("Full response:", response);
-            console.log("Response data:", response?.data);
-            console.log("Response result:", response?.data?.result);
-            console.log("Products count:", response?.data?.result?.length);
-            if (response?.data?.result && response.data.result.length > 0) {
-                const products = response.data.result;
-                setProducts(products);
-                setSearchKeyword(barcode);
-                setIsSearching(true);
-                setTotalPages(1);
-                toast.success(`${products.length} ta mahsulot topildi`);
-            } else {
+        // Oldingi debounce timeout ni bekor qilish
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+      
+        // Barcode scan qilganda 0.5 sekund kechikish bilan search qilish
+        searchDebounceRef.current = setTimeout(async () => {
+            try {
+                const response = await PostSimple(
+                    `api/products/search?keyword=${encodeURIComponent(barcode)}`
+                );
+                console.log("=== BARCODE SEARCH RESPONSE ===");
+                console.log("Barcode:", barcode);
+                console.log("Full response:", response);
+                console.log("Response data:", response?.data);
+                console.log("Response result:", response?.data?.result);
+                console.log("Products count:", response?.data?.result?.length);
+                if (response?.data?.result && response.data.result.length > 0) {
+                    const products = response.data.result;
+                    setProducts(products);
+                    setSearchKeyword(barcode);
+                    setIsSearching(true);
+                    setTotalPages(1);
+                    toast.success(`${products.length} ta mahsulot topildi`);
+                } else {
+                    toast.error("Mahsulot topilmadi");
+                }
+            } catch (error) {
+                console.error("Barcode qidiruvda xatolik:", error);
                 toast.error("Mahsulot topilmadi");
             }
-        } catch (error) {
-            console.error("Barcode qidiruvda xatolik:", error);
-            toast.error("Mahsulot topilmadi");
-        }
+        }, 500);
     };
 
     const addToCart = (product: Product) => {

@@ -49,6 +49,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         { value: number; label: string }[]
     >([]);
     const [isSearchingCategories, setIsSearchingCategories] = useState(false);
+    const [hasBarcode, setHasBarcode] = useState(false);
 
     // Helper functions for number formatting
     const formatNumberWithSpaces = (num: number): string => {
@@ -218,6 +219,100 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         };
     }, [isOpen, barcodeInput]);
 
+    // Generate barcode function
+    const handleGenerateBarcode = () => {
+        // Generate a random 13-digit barcode (EAN-13 format)
+        const randomBarcode = Math.floor(
+            1000000000000 + Math.random() * 9000000000000
+        ).toString();
+        setProductCode(randomBarcode);
+        setHasBarcode(true);
+        toast.success("Barcode muvaffaqiyatli yaratildi");
+    };
+
+    // Print barcode function (same as TableProduct.tsx)
+    const handlePrintBarcode = () => {
+        if (!productCode.trim()) {
+            toast.error("Barcode raqami mavjud emas");
+            return;
+        }
+
+        // Modal ochmasdan to'g'ridan-to'g'ri print qilish
+        const printBarcode = () => {
+            // Yangi oynada barcode sahifasini yaratish
+            const printWindow = window.open("", "_blank");
+            if (printWindow) {
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Barcode Print</title>
+                        <style>
+                            @page {
+                                size: 40mm 30mm;
+                                margin: 0;
+                            }
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                width: 40mm;
+                                height: 30mm;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-family: Arial, sans-serif;
+                            }
+                            .barcode-container {
+                                width: 100%;
+                                height: 100%;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                text-align: center;
+                            }
+                            .barcode-svg {
+                                max-width: 100%;
+                                height: auto;
+                                max-height: 25mm;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="barcode-container">
+                            <svg class="barcode-svg" id="barcode"></svg>
+                        </div>
+                        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+                        <script>
+                            JsBarcode("#barcode", "${productCode}", {
+                                width: 2.5,
+                                height: 80,
+                                displayValue: true,
+                                fontSize: 24,
+                                margin: 5,
+                                format: "CODE128"
+                            });
+
+                            // Avtomatik print
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                    window.onafterprint = function() {
+                                        window.close();
+                                    };
+                                }, 500);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+        };
+
+        printBarcode();
+    };
+
     const handleImageChange = async (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -361,6 +456,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         setImageFile(null);
         setImageId(null);
         setBarcodeInput("");
+        setHasBarcode(false);
         setImageUploadStatus({ type: null, message: "" });
         setIsUploadingImage(false);
         onClose();
@@ -387,15 +483,70 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     />
                 </div>
 
-                <div>
+                <div className="w-full">
                     <Label htmlFor="productCode">Mahsulot kodi</Label>
-                    <Input
-                        type="text"
-                        id="productCode"
-                        placeholder="Mahsulot kodi (ixtiyoriy) yoki barcode scanner ishlatish"
-                        value={productCode}
-                        onChange={(e) => setProductCode(e.target.value)}
-                    />
+                    <div className="flex gap-2 w-full">
+                        <div className="flex-1">
+                            <Input
+                                type="text"
+                                id="productCode"
+                                placeholder="Mahsulot kodi (ixtiyoriy) yoki barcode scanner ishlatish"
+                                value={productCode}
+                                onChange={(e) => {
+                                    setProductCode(e.target.value);
+                                    // Agar barcode o'chirilsa, hasBarcode ni false qilish
+                                    if (!e.target.value.trim()) {
+                                        setHasBarcode(false);
+                                    }
+                                }}
+                            />
+                        </div>
+                        {!hasBarcode || !productCode.trim() ? (
+                            <button
+                                type="button"
+                                onClick={handleGenerateBarcode}
+                                className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
+                                title="Barcode yaratish"
+                            >
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                                    />
+                                </svg>
+                                <span>Yaratish</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handlePrintBarcode}
+                                className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
+                                title="Barcode print qilish"
+                            >
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                    />
+                                </svg>
+                                <span>Print</span>
+                            </button>
+                        )}
+                    </div>
                     {isOpen && (
                         <p className="text-xs text-gray-500 mt-1">
                             💡 Barcode scanner ulangan - mahsulotni scan qiling

@@ -154,7 +154,7 @@ const TableProduct: React.FC<TableProductProps> = ({
                                 width: 2.5,
                                 height: 80,
                                 displayValue: true,
-                                fontSize: 16,
+                                fontSize: 24,
                                 margin: 5,
                                 format: "CODE128"
                             });
@@ -356,7 +356,8 @@ const TableProduct: React.FC<TableProductProps> = ({
                                 <tr
                                     key={product.product_id}
                                     className={` ${
-                                        product.total_amount < 2 && "bg-red-100 text-red-500"
+                                        product.total_amount < 2 &&
+                                        " text-red-500"
                                     } border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600`}
                                 >
                                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
